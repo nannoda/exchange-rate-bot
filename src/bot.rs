@@ -1,4 +1,4 @@
-use serenity::all::Message;
+use serenity::all::CommandOptionType;
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use serenity::async_trait;
-use serenity::builder::{CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage};
+use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage};
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::model::application::{Command, Interaction};
@@ -24,7 +24,7 @@ async fn get_exchange_rate_message(from: &str, to: &str) -> String {
 
     let rate = rate_result.unwrap();
 
-    let prompt = get_prompt(rate);
+    let prompt = get_prompt(rate, from, to);
 
     // keep track how much time it takes to generate the sentence
     let start = std::time::Instant::now();
@@ -48,46 +48,6 @@ Generated in {}.{:03} seconds\n\
 }
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
-//     let rate_result = get_exchange_rate(from, to).await;
-
-//     if rate_result.is_err() {
-//         // send_message(&ctx, "Error getting exchange rate").await;
-//         send_message(
-//             &ctx,
-//             format!(
-//                 "Error getting exchange rate: {}",
-//                 rate_result.err().unwrap()
-//             )
-//             .as_str(),
-//         )
-//         .await;
-//         return;
-//     }
-
-//     let rate = rate_result.unwrap();
-
-//     let prompt = get_prompt(rate);
-
-//     // keep track how much time it takes to generate the sentence
-//     let start = std::time::Instant::now();
-
-//     let llm_res = generate_sentence(prompt.as_str());
-
-//     let res_without_prompt = llm_res.await;
-
-//     let elapsed = start.elapsed();
-
-    
-
-//     let message_content = format!(
-//         "{}\n\
-// ```
-// 1 {} = {:.4} {}\n\
-// Generated in {}.{:03} seconds\n\
-// ```",
-//         res_without_prompt, from, rate, to, elapsed.as_secs(), elapsed.subsec_millis(),
-//     );
-
     let message_content = get_exchange_rate_message(from, to).await;
 
     send_message(&ctx, &message_content).await;
@@ -129,13 +89,30 @@ impl EventHandler for Handler {
         send_ready_message(&ctx, &ready).await;
 
         // create slash commands
-        let command = CreateCommand::new("check-ex")
+        let check_ex_command = CreateCommand::new("check-ex")
             .description("Check exchange rate");
 
-        let global_command = Command::create_global_command(&ctx.http, command).await;
+        let global_command = Command::create_global_command(&ctx.http, check_ex_command).await;
 
         if let Err(why) = global_command {
             log::warn!("Error creating global command: {:?}", why);
+        }
+
+        let custom_ex_check_command = CreateCommand::new("custom-ex-check")
+            .description("Check exchange rate")
+            .add_option(
+                CreateCommandOption::new(CommandOptionType::String, "from", "From currency")
+                    .required(true),
+            )
+            .add_option(
+                CreateCommandOption::new(CommandOptionType::String, "to", "To currency")
+                    .required(true),
+            );
+
+        let custom_command = Command::create_global_command(&ctx.http, custom_ex_check_command).await;
+
+        if let Err(why) = custom_command {
+            log::warn!("Error creating custom command: {:?}", why);
         }
 
         log::info!("Slash commands created");
@@ -162,6 +139,24 @@ impl EventHandler for Handler {
                 if let Err(why) = command.create_response(&ctx.http, builder).await {
                     log::warn!("Error creating interaction response: {:?}", why);
                 }                
+            }
+
+            if command_name == "custom-ex-check" {
+                let from = command.data.options.get(0).unwrap().value.as_str().unwrap();
+                let to = command.data.options.get(1).unwrap().value.as_str().unwrap();
+
+                log::debug!("from: {}, to: {}", from, to);
+
+                let exchange_rate_message = get_exchange_rate_message(from, to).await;
+
+                let data = CreateInteractionResponseMessage::new()
+                    .content(exchange_rate_message);
+
+                let builder = CreateInteractionResponse::Message(data);
+
+                if let Err(why) = command.create_response(&ctx.http, builder).await {
+                    log::warn!("Error creating interaction response: {:?}", why);
+                }
             }
         }
     }

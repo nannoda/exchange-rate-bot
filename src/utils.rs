@@ -103,9 +103,9 @@ fn replace_template(template: &str, from: &str, to: &str, current_rate: f64, las
         .replace("{DATE}", current_date)
 }
 
-pub fn get_prompt(current_rate: f64) -> String {
-    let from = environment::get_exchange_from();
-    let to = environment::get_exchange_to();
+pub fn get_prompt(current_rate: f64, from: &str, to: &str) -> String {
+    // let from = environment::get_exchange_from();
+    // let to = environment::get_exchange_to();
 
     let last_rate = get_last_exchange_rate(&from, &to, Some(1));
 
