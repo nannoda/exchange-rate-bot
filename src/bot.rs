@@ -118,6 +118,7 @@ impl EventHandler for Handler {
         log::info!("Slash commands created");
     }
 
+    // Called when a new interaction is created
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         log::debug!("Interaction: {:?}", interaction);
 
@@ -128,7 +129,6 @@ impl EventHandler for Handler {
                 let exchange_from = environment::get_exchange_from();
                 let exchange_to = environment::get_exchange_to();
 
-                // send_exchange_rate_message(Arc::new(ctx), &exchange_from, &exchange_to).await;
                 let exchange_rate_message = get_exchange_rate_message(&exchange_from, &exchange_to).await;
 
                 let data = CreateInteractionResponseMessage::new()
@@ -161,7 +161,6 @@ impl EventHandler for Handler {
         }
     }
 
-    // case you have for this.
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
         log::debug!("Cache built successfully!");
 
@@ -172,13 +171,6 @@ impl EventHandler for Handler {
         // it's safe to clone Context, but Arc is cheaper for this use case.
         // Untested claim, just theoretically. :P
         let ctx = Arc::new(ctx);
-
-        // We need to check that the loop is not already running when this event triggers,
-        // as this event triggers every time the bot enters or leaves a guild, along every time the
-        // ready shard event triggers.
-        //
-        // An AtomicBool is used because it doesn't require a mutable reference to be changed, as
-        // we don't have one due to self being an immutable reference.
         if !self.is_loop_running.load(Ordering::Relaxed) {
             // We have to clone the Arc, as it gets moved into the new thread.
             let ctx1 = Arc::clone(&ctx);
