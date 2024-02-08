@@ -12,6 +12,10 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'v%Y-%m-%d-%H%M%S')" >> $GITHUB_ENV
+      - name: Echo current date
+        run: echo $NOW # Gives "2022-12-11T01:42:20"
       -
         name: Checkout
         uses: actions/checkout@v4
@@ -27,13 +31,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: nannoda/exchange-rate-bot:latest,exchange-rate-bot:$(date +%s)
+      # -
+        # name: Build and push
+        # uses: docker/build-push-action@v5
+        # with:
+        #   context: .
+        #   push: true
+        #   tags: nannoda/exchange-rate-bot:latest,exchange-rate-bot:$(date +%s)
+
+            # steps:
+      #- uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag nannoda/exchange-rate-bot:$NOW --tag nannoda/exchange-rate-bot:latest
+      - name: Push the Docker image (latest)
+        run: docker image push nannoda/exchange-rate-bot:latest
+      - name: Push the Docker image (v)
+        run: docker image push nannoda/exchange-rate-bot:$NOW
+        
     # steps:
     # - uses: actions/checkout@v3
     # - name: Build the Docker image
