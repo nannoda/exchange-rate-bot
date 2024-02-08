@@ -33,7 +33,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: nannoda/exchange-rate-bot:latest
+          tags: nannoda/exchange-rate-bot:latest,exchange-rate-bot:$(date +%s)
     # steps:
     # - uses: actions/checkout@v3
     # - name: Build the Docker image
