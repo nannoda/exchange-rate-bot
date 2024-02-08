@@ -6,15 +6,14 @@ FROM rust:alpine3.19 as builder
 RUN apk update
 RUN apk add --no-cache build-base
 RUN apk add --no-cache pkgconf openssl-dev musl-dev cmake make perl clang16 curl strace
-# RUN apk add --no-cache sea-orm-cli
 RUN apk add --no-cache g++ gcc
 RUN apk add --no-cache musl-dev
 RUN apk add --no-cache openssl-dev
 RUN apk add openssl-libs-static
 
+# Set environment variables
 ENV OPENSSL_DIR=/usr
 ENV OPENSSL_STATIC=1
-# ENV RUSTFLAGS="-Ctarget-feature=-crt-static"
 
 # Copy . to /app
 COPY . /app
