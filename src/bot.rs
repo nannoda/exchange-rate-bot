@@ -1,32 +1,25 @@
+use serenity::all::Message;
 use serenity::prelude::*;
+use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
 use serenity::async_trait;
-use serenity::builder::CreateMessage;
+use serenity::builder::{CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage};
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::{ChannelId, GuildId};
+use serenity::model::application::{Command, Interaction};
 
 use crate::environment;
 use crate::llm::generate_sentence;
 use crate::utils::{get_exchange_rate, get_prompt};
 
-async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
+async fn get_exchange_rate_message(from: &str, to: &str) -> String {
     let rate_result = get_exchange_rate(from, to).await;
 
     if rate_result.is_err() {
-        // send_message(&ctx, "Error getting exchange rate").await;
-        send_message(
-            &ctx,
-            format!(
-                "Error getting exchange rate: {}",
-                rate_result.err().unwrap()
-            )
-            .as_str(),
-        )
-        .await;
-        return;
+        return format!("Error getting exchange rate: {}", rate_result.err().unwrap());
     }
 
     let rate = rate_result.unwrap();
@@ -42,8 +35,6 @@ async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
 
     let elapsed = start.elapsed();
 
-    
-
     let message_content = format!(
         "{}\n\
 ```
@@ -52,6 +43,52 @@ Generated in {}.{:03} seconds\n\
 ```",
         res_without_prompt, from, rate, to, elapsed.as_secs(), elapsed.subsec_millis(),
     );
+
+    return message_content;
+}
+
+async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
+//     let rate_result = get_exchange_rate(from, to).await;
+
+//     if rate_result.is_err() {
+//         // send_message(&ctx, "Error getting exchange rate").await;
+//         send_message(
+//             &ctx,
+//             format!(
+//                 "Error getting exchange rate: {}",
+//                 rate_result.err().unwrap()
+//             )
+//             .as_str(),
+//         )
+//         .await;
+//         return;
+//     }
+
+//     let rate = rate_result.unwrap();
+
+//     let prompt = get_prompt(rate);
+
+//     // keep track how much time it takes to generate the sentence
+//     let start = std::time::Instant::now();
+
+//     let llm_res = generate_sentence(prompt.as_str());
+
+//     let res_without_prompt = llm_res.await;
+
+//     let elapsed = start.elapsed();
+
+    
+
+//     let message_content = format!(
+//         "{}\n\
+// ```
+// 1 {} = {:.4} {}\n\
+// Generated in {}.{:03} seconds\n\
+// ```",
+//         res_without_prompt, from, rate, to, elapsed.as_secs(), elapsed.subsec_millis(),
+//     );
+
+    let message_content = get_exchange_rate_message(from, to).await;
 
     send_message(&ctx, &message_content).await;
 }
@@ -72,13 +109,16 @@ async fn send_message(ctx: &Context, content: &str) {
         // let channel_id = channel.as_u64().unwrap_or(0);
         log::info!("Channel id: {}", channel);
 
-        let message = ChannelId(channel)
-            .send_message(&ctx, |m: &mut CreateMessage| m.content(content))
-            .await;
+        let channel_id = ChannelId::new(channel);
 
-        if let Err(why) = message {
+        let message = MessageBuilder::new()
+            .push(content)
+            .build();
+        
+
+        if let Err(why) = channel_id.say(&ctx.http, &message).await {
             log::warn!("Error sending message: {:?}", why);
-        };
+        }
     }
 }
 
@@ -87,6 +127,43 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: serenity::model::gateway::Ready) {
         log::info!("{} is connected!", ready.user.name);
         send_ready_message(&ctx, &ready).await;
+
+        // create slash commands
+        let command = CreateCommand::new("check-ex")
+            .description("Check exchange rate");
+
+        let global_command = Command::create_global_command(&ctx.http, command).await;
+
+        if let Err(why) = global_command {
+            log::warn!("Error creating global command: {:?}", why);
+        }
+
+        log::info!("Slash commands created");
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        log::debug!("Interaction: {:?}", interaction);
+
+        if let Interaction::Command(command) = interaction {
+            let command_name = command.data.name.as_str();
+
+            if command_name == "check-ex" {
+                let exchange_from = environment::get_exchange_from();
+                let exchange_to = environment::get_exchange_to();
+
+                // send_exchange_rate_message(Arc::new(ctx), &exchange_from, &exchange_to).await;
+                let exchange_rate_message = get_exchange_rate_message(&exchange_from, &exchange_to).await;
+
+                let data = CreateInteractionResponseMessage::new()
+                    .content(exchange_rate_message);
+
+                let builder = CreateInteractionResponse::Message(data);
+
+                if let Err(why) = command.create_response(&ctx.http, builder).await {
+                    log::warn!("Error creating interaction response: {:?}", why);
+                }                
+            }
+        }
     }
 
     // case you have for this.

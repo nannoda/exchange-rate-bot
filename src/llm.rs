@@ -37,7 +37,8 @@ pub async fn generate_sentence(start: &str) -> String {
         .header("accept", "application/json")
         .header("content-type", "application/json")
         .header("Authorization", format!("Bearer {}", api_key))
-        .json(&json)
+        // .json(&json)
+        .body(json.to_string())
         .send().await;
 
     let text = res.unwrap().text().await.unwrap();
