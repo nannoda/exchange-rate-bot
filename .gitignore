@@ -1,0 +1,12 @@
+/target
+.env
+.idea/
+.vscode/
+
+*.bin
+*.db
+.DS_Store
+*.zip
+
+*.env
+data/

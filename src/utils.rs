@@ -1,0 +1,170 @@
+use rusqlite::{Connection, Error};
+use serde_json::Value;
+
+use crate::environment;
+
+pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, reqwest::Error> {
+    let api_key = environment::get_exchange_rate_api_key();
+
+    let result = reqwest::get(
+        format!("http://api.exchangeratesapi.io/v1/latest?access_key={}",api_key)
+    )
+    .await;
+
+    let text = result.unwrap().text().await.unwrap();
+
+    log::debug!("text: {}", text);
+
+    save_raw_exchange_rate(&text);
+    
+    let dict: Value = serde_json::from_str(&text).unwrap();
+
+    let from_rate = dict["rates"][from].as_f64().unwrap();
+    let to_rate = dict["rates"][to].as_f64().unwrap();
+
+    let rate = to_rate / from_rate;
+
+    save_exchange_rate(from, to, rate);
+
+    Ok(rate)
+}
+
+pub fn save_exchange_rate(from: &str, to: &str, rate: f64) {
+    let db_file = environment::get_db_file();
+    let con = Connection::open(db_file).unwrap();
+
+    let query = "INSERT INTO exchange_rate (from_currency, to_currency, rate) VALUES (?, ?, ?)";
+
+    con.execute(query, &[from, to, rate.to_string().as_str()])
+        .unwrap();
+
+    // println!("Saved exchange rate from {} to {} as {}", from, to, rate);
+    log::debug!("Saved exchange rate from {} to {} as {}", from, to, rate);
+}
+
+pub fn save_raw_exchange_rate(raw: &str) {
+    let db_file = environment::get_db_file();
+    let con = Connection::open(db_file).unwrap();
+
+    let query = "INSERT INTO exchange_rate_api_raw (raw) VALUES (?)";
+
+    con.execute(query, &[raw])
+        .unwrap();
+
+    log::debug!("Saved raw exchange rate: {}", raw);
+}
+
+pub fn save_llm_result(prompt: &str, result: &str) {
+    let db_file = environment::get_db_file();
+    let con = Connection::open(db_file).unwrap();
+
+    let query = "INSERT INTO llm_result (prompt, result) VALUES (?, ?)";
+
+    con.execute(query, &[prompt, result])
+        .unwrap();
+
+    log::debug!("Saved llm result: {} -> {}", prompt, result);
+}
+
+pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 {
+    let db_file = environment::get_db_file();
+    let con = Connection::open(db_file).unwrap();
+
+    let query = "SELECT rate FROM exchange_rate WHERE from_currency = ? AND to_currency = ? ORDER BY time DESC LIMIT 1 OFFSET ?";
+
+    let mut stmt = con.prepare(query).unwrap();
+
+    let mut rows = stmt
+        .query(&[from, to, &offset.unwrap_or(0).to_string()])
+        .unwrap();
+
+    let mut rate = || -> Result<f64, Error> {
+        let option_row = rows.next()?;
+        let row = option_row.ok_or(Error::QueryReturnedNoRows)?;
+        let rate = row.get(0)?;
+        Ok(rate)
+    };
+
+    match rate() {
+        Ok(rate) => rate,
+        Err(e) => {
+            println!("Error getting exchange rate: {}", e);
+            -1.0
+        }
+    }
+}
+
+fn replace_template(template: &str, from: &str, to: &str, current_rate: f64, last_rate: f64, current_date: &str) -> String {
+    template.replace("{FROM}", from)
+        .replace("{TO}", to)
+        .replace("{CURR}", &current_rate.to_string())
+        .replace("{PREV}", &last_rate.to_string())
+        .replace("{DIFF}", &(last_rate - current_rate).to_string())
+        .replace("{DATE}", current_date)
+}
+
+pub fn get_prompt(current_rate: f64) -> String {
+    let from = environment::get_exchange_from();
+    let to = environment::get_exchange_to();
+
+    let last_rate = get_last_exchange_rate(&from, &to, Some(1));
+
+    log::debug!("Last rate: {}", last_rate);
+    let current_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    let threshold = environment::get_exchange_rate_change_threshold();
+
+    log::debug!("Threshold: {}", threshold);
+
+    let prompt = match current_rate {
+        rate if (rate - last_rate).abs() < threshold => {
+            replace_template(environment::get_equal_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
+        },
+        rate if rate > last_rate => {
+            replace_template(environment::get_increase_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
+        },
+        rate if rate < last_rate => {
+            replace_template(environment::get_decrease_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
+        },
+        _ => {
+            replace_template(environment::get_equal_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
+        },
+    };
+
+    log::debug!("Prompt: {}", prompt);
+    prompt
+   
+}
+
+pub fn string_to_time_second(s: &str) -> u64 {
+    // convert string to lower case
+    let s = s.to_lowercase();
+    // if string ends with 's', remove it and convert to integer
+    if s.ends_with("s") {
+        s[..s.len()-1].parse::<u64>().unwrap()
+    }
+    // if string ends with 'm', remove it and convert to integer
+    else if s.ends_with("m") {
+        s[..s.len()-1].parse::<u64>().unwrap() * 60
+    }
+    // if string ends with 'h', remove it and convert to integer
+    else if s.ends_with("h") {
+        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60
+    }
+    // if string ends with 'd', remove it and convert to integer
+    else if s.ends_with("d") {
+        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24
+    }
+    // if string ends with 'w', remove it and convert to integer
+    else if s.ends_with("w") {
+        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24 * 7
+    }
+    // if string ends with 'y', remove it and convert to integer
+    else if s.ends_with("y") {
+        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24 * 365
+    }
+    // else convert to integer
+    else {
+        s.parse::<u64>().unwrap()
+    }
+}

@@ -1,0 +1,12 @@
+.vscode/
+.git/
+
+target/
+
+*.db
+*.sqlite
+*.env
+
+Dockerfile
+docker-compose.yml
+data/

@@ -1,0 +1,27 @@
+version: '3.1'
+
+# Services
+services:
+  app:
+    image: 'exchangebot:latest'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_FILE=/app/data/bot.db
+
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CHANNELS=${CHANNELS}
+      - INTERVAL=${INTERVAL}
+      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY}
+      - EXCHANGE_FROM=${EXCHANGE_FROM}
+      - EXCHANGE_TO=${EXCHANGE_TO}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE}
+      - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE}
+      - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE}
+      - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD}
+      - RUST_LOG=exchange_rate_bot=info
