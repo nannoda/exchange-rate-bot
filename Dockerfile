@@ -2,11 +2,11 @@ FROM rust:alpine3.19 as builder
 
 # Add build dependencies
 RUN apk update
-RUN apk add --no-cache build-base
-RUN apk add --no-cache pkgconf openssl-dev musl-dev cmake make perl clang16 curl strace
-RUN apk add --no-cache g++ gcc
-RUN apk add --no-cache musl-dev
-RUN apk add --no-cache openssl-dev
+RUN apk add build-base
+RUN apk add pkgconf openssl-dev musl-dev cmake make perl clang16 curl strace
+RUN apk add g++ gcc
+RUN apk add musl-dev
+RUN apk add openssl-dev
 RUN apk add openssl-libs-static
 
 # Set environment variables
