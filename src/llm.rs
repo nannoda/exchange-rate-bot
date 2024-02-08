@@ -3,7 +3,9 @@ use reqwest;
 use crate::environment;
 
 use crate::utils;
-
+/// Generate sentence using language model
+/// 
+/// Currently using Cohere API
 pub async fn generate_sentence(start: &str) -> String {
 
     let api_key = environment::get_cohere_api_key();

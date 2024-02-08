@@ -3,8 +3,6 @@ use rusqlite::Connection;
 use std::env;
 use crate::utils::string_to_time_second;
 
-
-
 const CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY: &str = r#"
 CREATE TABLE IF NOT EXISTS exchange_rate
 (
@@ -143,6 +141,7 @@ fn ensure_db(){
     con.execute(CREATE_LLM_RESULT_TABLE_QUERY, []).unwrap();
 }
 
+/// Ensure environment variables are set
 pub async fn ensure_environment(){
     log::info!("Ensuring environment");
     ensure_db();

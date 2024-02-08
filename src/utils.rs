@@ -1,15 +1,35 @@
-use rusqlite::{Connection, Error};
+use rusqlite::{Connection};
 use serde_json::Value;
 
 use crate::environment;
 
-pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, reqwest::Error> {
+#[derive(Debug)]
+pub enum GetExchangeRateError {
+    APIError,
+    ParseError,
+}
+
+impl std::fmt::Display for GetExchangeRateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Error getting exchange rate")
+    }
+}
+
+/**
+ * Get exchange rate from API
+ */
+pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, GetExchangeRateError> {
+
     let api_key = environment::get_exchange_rate_api_key();
 
     let result = reqwest::get(
         format!("http://api.exchangeratesapi.io/v1/latest?access_key={}",api_key)
     )
     .await;
+
+    if result.is_err() {
+        return Err(GetExchangeRateError::APIError);
+    }
 
     let text = result.unwrap().text().await.unwrap();
 
@@ -19,8 +39,19 @@ pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, reqwest::Err
     
     let dict: Value = serde_json::from_str(&text).unwrap();
 
-    let from_rate = dict["rates"][from].as_f64().unwrap();
-    let to_rate = dict["rates"][to].as_f64().unwrap();
+    let from_rate = match dict["rates"][from].as_f64() {
+        Some(rate) => rate,
+        None => {
+            return Err(GetExchangeRateError::ParseError);
+        }
+    };
+
+    let to_rate = match dict["rates"][to].as_f64() {
+        Some(rate) => rate,
+        None => {
+            return Err(GetExchangeRateError::ParseError);
+        }
+    };
 
     let rate = to_rate / from_rate;
 
@@ -29,6 +60,9 @@ pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, reqwest::Err
     Ok(rate)
 }
 
+/**
+ * Save exchange rate to database
+ */
 pub fn save_exchange_rate(from: &str, to: &str, rate: f64) {
     let db_file = environment::get_db_file();
     let con = Connection::open(db_file).unwrap();
@@ -42,6 +76,9 @@ pub fn save_exchange_rate(from: &str, to: &str, rate: f64) {
     log::debug!("Saved exchange rate from {} to {} as {}", from, to, rate);
 }
 
+/**
+ * Save raw exchange rate to database
+ */
 pub fn save_raw_exchange_rate(raw: &str) {
     let db_file = environment::get_db_file();
     let con = Connection::open(db_file).unwrap();
@@ -54,6 +91,9 @@ pub fn save_raw_exchange_rate(raw: &str) {
     log::debug!("Saved raw exchange rate: {}", raw);
 }
 
+/**
+ * Save raw LLM result to database
+ */
 pub fn save_llm_result(prompt: &str, result: &str) {
     let db_file = environment::get_db_file();
     let con = Connection::open(db_file).unwrap();
@@ -78,9 +118,9 @@ pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 
         .query(&[from, to, &offset.unwrap_or(0).to_string()])
         .unwrap();
 
-    let mut rate = || -> Result<f64, Error> {
+    let mut rate = || -> Result<f64, rusqlite::Error> {
         let option_row = rows.next()?;
-        let row = option_row.ok_or(Error::QueryReturnedNoRows)?;
+        let row = option_row.ok_or(rusqlite::Error::QueryReturnedNoRows)?;
         let rate = row.get(0)?;
         Ok(rate)
     };

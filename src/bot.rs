@@ -19,7 +19,7 @@ async fn get_exchange_rate_message(from: &str, to: &str) -> String {
     let rate_result = get_exchange_rate(from, to).await;
 
     if rate_result.is_err() {
-        return format!("Error getting exchange rate: {}", rate_result.err().unwrap());
+        return format!("Error getting exchange rate from {} to {}", from, to);
     }
 
     let rate = rate_result.unwrap();
