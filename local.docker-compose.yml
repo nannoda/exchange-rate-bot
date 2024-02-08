@@ -5,7 +5,7 @@ services:
   app:
     image: 'exchangebot:latest'
     build:
-      context: https://github.com/nannoda/exchange-rate-bot.git
+      context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     volumes:

@@ -8,5 +8,5 @@ target/
 *.env
 
 Dockerfile
-docker-compose.yml
+*docker-compose.yml
 data/
