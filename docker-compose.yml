@@ -1,6 +1,5 @@
 version: '3.1'
 
-# Services
 services:
   app:
     image: 'exchangebot:latest'
@@ -9,17 +8,20 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
+    # By default the executable will be stored in /app
       - ./data:/app/data
     environment:
-      - DB_FILE=/app/data/bot.db
-
+    # Required environment variables
       - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - CHANNELS=${CHANNELS}
-      - INTERVAL=${INTERVAL}
       - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY}
       - EXCHANGE_FROM=${EXCHANGE_FROM}
       - EXCHANGE_TO=${EXCHANGE_TO}
       - COHERE_API_KEY=${COHERE_API_KEY}
+    # Optional environment variables
+      - DB_FILE=/app/data/bot.db
+
+      - CHANNELS=${CHANNELS}
+      - INTERVAL=${INTERVAL}
       - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE}
       - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE}
       - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE}
