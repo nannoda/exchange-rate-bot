@@ -12,18 +12,19 @@ services:
       - ./data:/app/data
     environment:
     # Required environment variables
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY}
-      - EXCHANGE_FROM=${EXCHANGE_FROM}
-      - EXCHANGE_TO=${EXCHANGE_TO}
-      - COHERE_API_KEY=${COHERE_API_KEY}
-    # Optional environment variables
-      - DB_FILE=/app/data/bot.db
+      - DISCORD_TOKEN=${DISCORD_TOKEN} # DISCORD_TOKEN: The bot token for the discord bot. You can get it from the discord developer portal.
+      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY} # EXCHANGE_RATE_API_KEY: The API key for the exchange rate API. You can get it from https://exchangeratesapi.io/
+      - EXCHANGE_FROM=${EXCHANGE_FROM}  # EXCHANGE_FROM: The currency code to convert from. For example, USD. It should be an ISO 4217 currency code.
+      - EXCHANGE_TO=${EXCHANGE_TO} # EXCHANGE_TO: The currency code to convert to. For example, EUR. It should be an ISO 4217 currency code.
+      - COHERE_API_KEY=${COHERE_API_KEY} # COHERE_API_KEY: The API key for the Cohere API. You can get it from https://cohere.com/
 
-      - CHANNELS=${CHANNELS}
-      - INTERVAL=${INTERVAL}
-      - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE}
-      - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE}
-      - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE}
-      - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD}
-      - RUST_LOG=exchange_rate_bot=info
+    # Optional environment variables
+      - DB_FILE=/app/data/bot.db # The path to the SQLite database file. By default it will be stored in /app/exchange_rate_bot.db
+
+      - CHANNELS=${CHANNELS} # The channels to listen to. It should be a comma separated list of channel IDs. If not provided, the bot will not send any messages.
+      - INTERVAL=${INTERVAL} # The interval to automatically send exchange rate updates. By default it is '24h'.
+      - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate increases.
+      - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate decreases.
+      - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate stays the same.
+      - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD} # The threshold for the exchange rate change. If the change is greater than this value, the bot will send a message. By default it is 0.001.
+      - RUST_LOG=exchange_rate_bot=info # The log level for the bot.
