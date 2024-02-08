@@ -1,4 +1,4 @@
-use rusqlite::{Connection};
+use rusqlite::Connection;
 use serde_json::Value;
 
 use crate::environment;

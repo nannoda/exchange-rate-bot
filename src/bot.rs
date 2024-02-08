@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use serenity::async_trait;
-use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage};
+use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::framework::standard::StandardFramework;
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::model::application::{Command, Interaction};
