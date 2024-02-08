@@ -1,5 +1,3 @@
-# From alpine
-
 FROM rust:alpine3.19 as builder
 
 # Add build dependencies
