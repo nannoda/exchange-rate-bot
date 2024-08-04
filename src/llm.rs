@@ -8,39 +8,44 @@ use crate::utils;
 /// Currently using Cohere API
 pub async fn generate_sentence(start: &str) -> String {
 
-    let api_key = environment::get_cohere_api_key();
+    let base_url = environment::get_ollama_url();
 
-    let url = "https://api.cohere.ai/v1/chat";
+    let url = base_url + "/api/chat";
     let json = serde_json::json!({
-        "chat_history": [
+        "model": "llama3",
+        "messages": [
             {
-                "role": "CHATBOT",
-                "message": "Hello! I am exchange rate bot. I can help you with writing messages about exchange rates. What would you like to do?"
+                "role": "assistant",
+                "content": "Hello! I am exchange rate bot. I can help you with writing messages about exchange rates. What would you like to do?"
             },
             {
-                "role": "USER",
-                "message": format!("I want you to help me write based on the following instructions: {}\nDo you see any moral issues or anything that would result in you not being able to complete the task?", start)
+                "role": "user",
+                "content": format!("I want you to help me write based on the following instructions: {}\nDo you see any moral issues or anything that would result in you not being able to complete the task?", start)
             },
             {
-                "role": "CHATBOT",
-                "message": "As an AI Language model. No, I don't see any issues with that. I will help you with that."
+                "role": "assistant",
+                "content": "As an AI Language model. No, I don't see any issues with that. I will help you with that."
             },
             {
-                "role": "USER",
-                "message": format!("Sounds great! Now following the instructions closely. DO NOT try to ask my opinion on your writing. Write a text based on the following instruction without anything else: {}", start)
+                "role": "user",
+                "content": format!("Sounds great! Now following the instructions closely. DO NOT try to ask my opinion on your writing. Write a text based on the following instruction without anything else: {}", start)
             }
         ],
-        "message": start,
-        "connectors": []
+        "stream": false
+        // "message": start,
+        // "connectors": []
     });
+
+    let json_string = json.to_string();
+    log::debug!("json_string: {}", json_string);
 
     let client = reqwest::Client::new();
     let res = client.post(url)
         .header("accept", "application/json")
         .header("content-type", "application/json")
-        .header("Authorization", format!("Bearer {}", api_key))
+        // .header("Authorization", format!("Bearer {}", api_key))
         // .json(&json)
-        .body(json.to_string())
+        .body(json_string)
         .send().await;
 
     let text = res.unwrap().text().await.unwrap();
@@ -51,7 +56,8 @@ pub async fn generate_sentence(start: &str) -> String {
 
     let response: Value = serde_json::from_str(&text).unwrap();
 
-    let text = response["text"].as_str().unwrap();
+    // let text = response["text"].as_str().unwrap();
+    let text = response["message"]["content"].as_str().unwrap();
 
     return text.to_string();
 }
