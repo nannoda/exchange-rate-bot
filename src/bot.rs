@@ -16,13 +16,14 @@ use crate::llm::generate_sentence;
 use crate::utils::{get_exchange_rate, get_prompt};
 
 async fn get_exchange_rate_message(from: &str, to: &str) -> String {
-    let rate_result = get_exchange_rate(from, to).await;
+    // let rate_result = get_exchange_rate(from, to).await;
 
-    if rate_result.is_err() {
-        return format!("Error getting exchange rate from {} to {}", from, to);
-    }
+    // if rate_result.is_err() {
+    //     return format!("Error getting exchange rate from {} to {}", from, to);
+    // }
 
-    let rate = rate_result.unwrap();
+    // let rate = rate_result.unwrap();
+    let rate: f64 = 0.0;
 
     let prompt = get_prompt(rate, from, to);
 

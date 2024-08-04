@@ -109,22 +109,22 @@ pub fn get_exchange_from() -> String {
     }
 }
 
-pub fn get_cohere_api_key() -> String {
-    match env::var("COHERE_API_KEY") {
-        Ok(val) => val,
-        Err(_) => {
-            // stop the program
-            panic!("COHERE_API_KEY not found in environment! Please set it in .env file or in the environment");
-        }
-    }
-}
-
 pub fn get_exchange_to() -> String {
     match env::var("EXCHANGE_TO") {
         Ok(val) => val,
         Err(_) => {
             // stop the program
             panic!("EXCHANGE_TO not found in environment! Please set it in .env file or in the environment");
+        }
+    }
+}
+
+pub fn get_ollama_url()-> String {
+    match env::var("OLLAMA_URL") {
+        Ok(val) => val,
+        Err(_) => {
+            // stop the program
+            panic!("OLLAMA_URL not found in environment! Please set it in .env file or in the environment");
         }
     }
 }
