@@ -57,7 +57,7 @@ pub async fn generate_sentence(start: &str) -> String {
     let response: Value = serde_json::from_str(&text).unwrap();
 
     // let text = response["text"].as_str().unwrap();
-    let text = response["message"]["content"].as_str().unwrap();
+    let text = response["message"]["content"].as_str().unwrap_or("ERROR GENERATING MESSAGE");
 
     return text.to_string();
 }
