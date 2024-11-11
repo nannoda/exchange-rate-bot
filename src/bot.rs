@@ -39,7 +39,7 @@ async fn get_exchange_rate_message(from: &str, to: &str) -> String {
     let message_content = format!(
         "{}\n\
 ```
-1 {} = {:.4} {}\n\
+1 {} = {} {}\n\
 Generated in {}.{:03} seconds\n\
 ```",
         res_without_prompt, from, rate, to, elapsed.as_secs(), elapsed.subsec_millis(),

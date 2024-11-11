@@ -1,5 +1,3 @@
-version: '3.1'
-
 services:
   app:
     image: 'exchangebot:latest'
@@ -16,7 +14,7 @@ services:
       - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY} # EXCHANGE_RATE_API_KEY: The API key for the exchange rate API. You can get it from https://exchangeratesapi.io/
       - EXCHANGE_FROM=${EXCHANGE_FROM}  # EXCHANGE_FROM: The currency code to convert from. For example, USD. It should be an ISO 4217 currency code.
       - EXCHANGE_TO=${EXCHANGE_TO} # EXCHANGE_TO: The currency code to convert to. For example, EUR. It should be an ISO 4217 currency code.
-      - COHERE_API_KEY=${COHERE_API_KEY} # COHERE_API_KEY: The API key for the Cohere API. You can get it from https://cohere.com/
+      - OLLAMA_URL=${OLLAMA_URL} # OLLAMA_URL: Then Ollama endpoint.
 
     # Optional environment variables
       - DB_FILE=/app/data/bot.db # The path to the SQLite database file. By default it will be stored in /app/exchange_rate_bot.db
