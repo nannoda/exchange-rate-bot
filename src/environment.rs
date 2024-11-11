@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 
-use std::env;
 use crate::utils::string_to_time_second;
+use std::env;
 
 const CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY: &str = r#"
 CREATE TABLE IF NOT EXISTS exchange_rate
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS llm_result
 );
 "#;
 
-pub fn get_interval()->u64{
+pub fn get_interval() -> u64 {
     let interval_str = get_and_set_env_var("INTERVAL", "24h");
     let interval_int = string_to_time_second(interval_str.as_str());
     return interval_int;
@@ -44,7 +44,7 @@ fn get_and_set_env_var(key: &str, default: &str) -> String {
             // set environment variable
             env::set_var(key, default);
             default.to_string()
-        },
+        }
     }
 }
 
@@ -55,15 +55,50 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
 }
 
 pub fn get_increase_prompt_template() -> String {
-    return get_and_set_env_var("INCREASE_PROMPT_TEMPLATE", "Today is {DATE}. You want to write a short report informing the people about the increase in exchange from {FROM} to {TO} is now {CURR}, which is higher than the previous {PREV}. The increase is {DIFF}.");
+    return get_and_set_env_var(
+        "INCREASE_PROMPT_TEMPLATE",
+        r#"Today is {DATE}. Provide a brief report for the public about an increase in exchange rates.
+- The exchange rate from {FROM} to {TO} has risen to {CURR}, which is higher than the previous rate of {PREV}.
+- The increase in value is {DIFF}.
+Summarize this information clearly and concisely."#,
+    );
 }
 
 pub fn get_decrease_prompt_template() -> String {
-    return get_and_set_env_var("DECREASE_PROMPT_TEMPLATE", "Today is {DATE}. You want to write a short report informing the people about the decrease in exchange from {FROM} to {TO} is now {CURR}, which is lower than the previous {PREV}. The decrease is {DIFF}.");
+    return get_and_set_env_var(
+        "DECREASE_PROMPT_TEMPLATE",
+        r#"Today is {DATE}. Provide a brief report for the public about a decrease in exchange rates.
+- The exchange rate from {FROM} to {TO} has dropped to {CURR}, which is lower than the previous rate of {PREV}.
+- The decrease in value is {DIFF}.
+Summarize this information clearly and concisely."#,
+    );
 }
 
 pub fn get_equal_prompt_template() -> String {
-    return get_and_set_env_var("EQUAL_PROMPT_TEMPLATE", "Today is {DATE}. You want to write a short report informing the people about the exchange from {FROM} to {TO} is now {CURR}, which is about the same as the previous {PREV}.");
+    return get_and_set_env_var(
+        "EQUAL_PROMPT_TEMPLATE",
+        r#"Today is {DATE}. Provide a brief report for the public on the current exchange rate.
+- The exchange rate from {FROM} to {TO} is {CURR}, which is approximately the same as the previous rate of {PREV}.
+Summarize this information clearly and concisely."#,
+    );
+}
+
+pub fn get_system_prompt() -> String {
+    return get_and_set_env_var(
+        "SYSTEM_PROMPT",
+        r#"
+        You are an exchange rate report bot. Your role is to provide engaging, natural, and human-like updates on exchange rates.
+        Your updates should be:
+        - Informative and easy to understand
+        - Brief yet professional in tone
+        - Written in a way that captures the reader's interest while focusing on accurate exchange rate details.
+        
+        Instructions:
+        - Follow the user's guidance to shape each message.
+        - Structure information clearly and concisely.
+        - Keep your tone approachable, making complex financial terms easy for the average person to understand.
+        "#,
+    );
 }
 
 pub fn get_db_file() -> String {
@@ -119,7 +154,7 @@ pub fn get_exchange_to() -> String {
     }
 }
 
-pub fn get_ollama_url()-> String {
+pub fn get_ollama_url() -> String {
     match env::var("OLLAMA_URL") {
         Ok(val) => val,
         Err(_) => {
@@ -129,24 +164,26 @@ pub fn get_ollama_url()-> String {
     }
 }
 
-pub fn get_ollama_model()-> String {
+pub fn get_ollama_model() -> String {
     return get_and_set_env_var("OLLAMA_MODEL", "llama3.1");
 }
 
-fn ensure_db(){
+fn ensure_db() {
     log::info!("Ensuring db");
     // get DB_FILE from environment
     let db_file = get_db_file();
     log::debug!("DB_FILE: {}", db_file);
     // create db if not exists
     let con = Connection::open(db_file).unwrap();
-    con.execute(CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY, []).unwrap();
-    con.execute(CREATE_EXCHANGE_RATE_API_RAW_TABLE_QUERY, []).unwrap();
+    con.execute(CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY, [])
+        .unwrap();
+    con.execute(CREATE_EXCHANGE_RATE_API_RAW_TABLE_QUERY, [])
+        .unwrap();
     con.execute(CREATE_LLM_RESULT_TABLE_QUERY, []).unwrap();
 }
 
 /// Ensure environment variables are set
-pub async fn ensure_environment(){
+pub async fn ensure_environment() {
     log::info!("Ensuring environment");
     ensure_db();
     get_discord_token();
