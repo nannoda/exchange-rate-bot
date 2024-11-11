@@ -7,7 +7,6 @@ use std::time::Duration;
 
 use serenity::async_trait;
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage};
-use serenity::framework::standard::StandardFramework;
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::model::application::{Command, Interaction};
 
@@ -196,8 +195,6 @@ impl EventHandler for Handler {
 }
 
 pub async fn run_bot() {
-    let framework = StandardFramework::new();
-
     let token = environment::get_discord_token();
 
     log::debug!("Using token: {}", token);
@@ -207,7 +204,6 @@ pub async fn run_bot() {
         .event_handler(Handler {
             is_loop_running: AtomicBool::new(false),
         })
-        .framework(framework)
         .await
         .expect("Error creating client");
 
