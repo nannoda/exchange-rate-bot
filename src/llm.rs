@@ -2,7 +2,9 @@ use serde_json::Value;
 use reqwest;
 use crate::environment;
 
+use crate::environment::get_ollama_model;
 use crate::utils;
+
 /// Generate sentence using language model
 /// 
 /// Currently using Cohere API
@@ -12,7 +14,7 @@ pub async fn generate_sentence(start: &str) -> String {
 
     let url = base_url + "/api/chat";
     let json = serde_json::json!({
-        "model": "llama3",
+        "model": get_ollama_model(),
         "messages": [
             {
                 "role": "assistant",
@@ -32,8 +34,6 @@ pub async fn generate_sentence(start: &str) -> String {
             }
         ],
         "stream": false
-        // "message": start,
-        // "connectors": []
     });
 
     let json_string = json.to_string();

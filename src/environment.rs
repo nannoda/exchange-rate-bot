@@ -129,6 +129,10 @@ pub fn get_ollama_url()-> String {
     }
 }
 
+pub fn get_ollama_model()-> String {
+    return get_and_set_env_var("OLLAMA_MODEL", "llama3.1");
+}
+
 fn ensure_db(){
     log::info!("Ensuring db");
     // get DB_FILE from environment

@@ -4,7 +4,6 @@ mod utils;
 mod bot;
 mod llm;
 
-
 #[tokio::main]
 async fn main() {
     match dotenv() {
