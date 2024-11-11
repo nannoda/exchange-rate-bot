@@ -31,26 +31,44 @@ pub async fn generate_sentence(start: &str) -> String {
     log::debug!("json_string: {}", json_string);
 
     let client = reqwest::Client::new();
-    let res = client
+    let res = match client
         .post(url)
         .header("accept", "application/json")
         .header("content-type", "application/json")
         .body(json_string)
         .send()
-        .await;
+        .await
+    {
+        Ok(response) => response,
+        Err(e) => {
+            log::error!("Failed to send request: {}", e);
+            return format!("Error generating response: Failed to send request ({})", e);
+        }
+    };
 
-    let text = res.unwrap().text().await.unwrap();
+    let text = match res.text().await {
+        Ok(body) => body,
+        Err(e) => {
+            log::error!("Failed to get response text: {}", e);
+            return format!("Error generating response: Failed to retrieve response text ({})", e);
+        }
+    };
 
     utils::save_llm_result(start, &text);
 
     log::debug!("text: {}", text);
 
-    let response: Value = serde_json::from_str(&text).unwrap();
+    let response: Value = match serde_json::from_str(&text) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            log::error!("Failed to parse JSON response: {}", e);
+            return format!("Error generating response: Failed to parse JSON ({})", e);
+        }
+    };
 
-    // let text = response["text"].as_str().unwrap();
-    let text = response["message"]["content"]
+    let content = response["message"]["content"]
         .as_str()
-        .unwrap_or("ERROR GENERATING MESSAGE");
+        .unwrap_or("Error generating response: fail to find [message][content]");
 
-    return text.to_string();
+    return content.to_string();
 }
