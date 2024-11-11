@@ -1,4 +1,4 @@
-FROM rust:alpine3.19 as builder
+FROM rust:alpine3.20 as builder
 
 # Add build dependencies
 RUN apk update
@@ -29,7 +29,7 @@ RUN mkdir -p /build
 RUN cp target/release/exchange-rate-bot /build
 
 # Create a new image from alpine
-FROM alpine:3.19
+FROM alpine:3.20
 
 RUN mkdir /app
 
