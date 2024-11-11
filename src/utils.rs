@@ -137,9 +137,9 @@ pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 
 fn replace_template(template: &str, from: &str, to: &str, current_rate: f64, last_rate: f64, current_date: &str) -> String {
     template.replace("{FROM}", from)
         .replace("{TO}", to)
-        .replace("{CURR}", &current_rate.to_string())
-        .replace("{PREV}", &last_rate.to_string())
-        .replace("{DIFF}", &(last_rate - current_rate).to_string())
+        .replace("{CURR}", &format!("{:.3}", current_rate))
+        .replace("{PREV}", &format!("{:.3}", last_rate))
+        .replace("{DIFF}", &format!("{:.3}", last_rate - current_rate))
         .replace("{DATE}", current_date)
 }
 
