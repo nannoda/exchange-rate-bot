@@ -31,9 +31,6 @@ RUN cp target/release/exchange-rate-bot /build
 # Create a new image from alpine
 FROM alpine:3.19
 
-# RUN apk add bash bash-completion
-# RUN apk add util-linux pciutils hwdata-pci usbutils hwdata-usb coreutils binutils findutils grep iproute2
-
 RUN mkdir /app
 
 # Copy the binary from the builder stage to /app
