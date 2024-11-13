@@ -3,6 +3,7 @@ mod environment;
 mod utils;
 mod bot;
 mod llm;
+mod commands;
 
 #[tokio::main]
 async fn main() {

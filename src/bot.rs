@@ -10,42 +10,11 @@ use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionRes
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::model::application::{Command, Interaction};
 
-use crate::environment;
+use crate::{commands, environment};
 use crate::llm::generate_sentence;
-use crate::utils::{get_exchange_rate, get_prompt};
+use crate::utils::{get_exchange_rate, get_exchange_rate_message, get_prompt};
 
-async fn get_exchange_rate_message(from: &str, to: &str) -> String {
-    let rate_result = get_exchange_rate(from, to).await;
 
-    if rate_result.is_err() {
-        return format!("Error getting exchange rate from {} to {}", from, to);
-    }
-
-    let rate = rate_result.unwrap();
-    // let rate: f64 = 0.0;
-
-    let prompt = get_prompt(rate, from, to);
-
-    // keep track how much time it takes to generate the sentence
-    let start = std::time::Instant::now();
-
-    let llm_res = generate_sentence(prompt.as_str());
-
-    let res_without_prompt = llm_res.await;
-
-    let elapsed = start.elapsed();
-
-    let message_content = format!(
-        "{}\n\
-```
-1 {} = {} {}\n\
-Generated in {}.{:03} seconds\n\
-```",
-        res_without_prompt, from, rate, to, elapsed.as_secs(), elapsed.subsec_millis(),
-    );
-
-    return message_content;
-}
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     let message_content = get_exchange_rate_message(from, to).await;
@@ -53,16 +22,15 @@ async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     send_message(&ctx, &message_content).await;
 }
 
-struct Handler {
+struct ExchangeRateBotEventHandler {
     is_loop_running: AtomicBool,
 }
 
 async fn send_ready_message(ctx: &Context, ready: &serenity::model::gateway::Ready) {
-    send_message(ctx, &format!("{} is back!", ready.user.name)).await;
+    send_message(ctx, &format!("{} is back online!", ready.user.name)).await;
 }
 
 async fn send_message(ctx: &Context, content: &str) {
-
     let channels = environment::get_channels();
 
     for channel in channels {
@@ -83,38 +51,16 @@ async fn send_message(ctx: &Context, content: &str) {
 }
 
 #[async_trait]
-impl EventHandler for Handler {
+impl EventHandler for ExchangeRateBotEventHandler {
     async fn ready(&self, ctx: Context, ready: serenity::model::gateway::Ready) {
         log::info!("{} is connected!", ready.user.name);
         send_ready_message(&ctx, &ready).await;
 
-        // create slash commands
-        let check_ex_command = CreateCommand::new("check-ex")
-            .description("Check exchange rate");
-
-        let global_command = Command::create_global_command(&ctx.http, check_ex_command).await;
+        let global_command = Command::create_global_command(&ctx.http, commands::check_rate::register()).await;
 
         if let Err(why) = global_command {
             log::warn!("Error creating global command: {:?}", why);
         }
-
-        let custom_ex_check_command = CreateCommand::new("custom-ex-check")
-            .description("Check exchange rate")
-            .add_option(
-                CreateCommandOption::new(CommandOptionType::String, "from", "From currency")
-                    .required(true),
-            )
-            .add_option(
-                CreateCommandOption::new(CommandOptionType::String, "to", "To currency")
-                    .required(true),
-            );
-
-        let custom_command = Command::create_global_command(&ctx.http, custom_ex_check_command).await;
-
-        if let Err(why) = custom_command {
-            log::warn!("Error creating custom command: {:?}", why);
-        }
-
         log::info!("Slash commands created");
     }
 
@@ -124,40 +70,6 @@ impl EventHandler for Handler {
 
         if let Interaction::Command(command) = interaction {
             let command_name = command.data.name.as_str();
-
-            if command_name == "check-ex" {
-                let exchange_from = environment::get_exchange_from();
-                let exchange_to = environment::get_exchange_to();
-
-                let exchange_rate_message = get_exchange_rate_message(&exchange_from, &exchange_to).await;
-
-                let data = CreateInteractionResponseMessage::new()
-                    .content(exchange_rate_message);
-
-                let builder = CreateInteractionResponse::Message(data);
-
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    log::warn!("Error creating interaction response: {:?}", why);
-                }                
-            }
-
-            if command_name == "custom-ex-check" {
-                let from = command.data.options.get(0).unwrap().value.as_str().unwrap();
-                let to = command.data.options.get(1).unwrap().value.as_str().unwrap();
-
-                log::debug!("from: {}, to: {}", from, to);
-
-                let exchange_rate_message = get_exchange_rate_message(from, to).await;
-
-                let data = CreateInteractionResponseMessage::new()
-                    .content(exchange_rate_message);
-
-                let builder = CreateInteractionResponse::Message(data);
-
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    log::warn!("Error creating interaction response: {:?}", why);
-                }
-            }
         }
     }
 
@@ -201,7 +113,7 @@ pub async fn run_bot() {
 
     let intents = GatewayIntents::non_privileged();
     let mut client = Client::builder(token, intents)
-        .event_handler(Handler {
+        .event_handler(ExchangeRateBotEventHandler {
             is_loop_running: AtomicBool::new(false),
         })
         .await

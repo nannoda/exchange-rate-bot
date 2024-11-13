@@ -64,6 +64,12 @@ Summarize this information clearly and concisely."#,
     );
 }
 
+pub fn get_exchange_rate_api_url() -> String {
+    return get_and_set_env_var(
+        "EXCHANGE_RATE_API_URL"
+        , "http://api.exchangeratesapi.io/v1/latest")
+}
+
 pub fn get_decrease_prompt_template() -> String {
     return get_and_set_env_var(
         "DECREASE_PROMPT_TEMPLATE",

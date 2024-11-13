@@ -1,7 +1,10 @@
 use rusqlite::Connection;
 use serde_json::Value;
 
-use crate::environment;
+use crate::{
+    environment::{self, get_exchange_rate_api_url},
+    llm::generate_sentence,
+};
 
 #[derive(Debug)]
 pub enum GetExchangeRateError {
@@ -19,12 +22,13 @@ impl std::fmt::Display for GetExchangeRateError {
  * Get exchange rate from API
  */
 pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, GetExchangeRateError> {
-
     let api_key = environment::get_exchange_rate_api_key();
 
-    let result = reqwest::get(
-        format!("http://api.exchangeratesapi.io/v1/latest?access_key={}",api_key)
-    )
+    let result = reqwest::get(format!(
+        "{}?access_key={}",
+        get_exchange_rate_api_url(),
+        api_key
+    ))
     .await;
 
     if result.is_err() {
@@ -36,7 +40,7 @@ pub async fn get_exchange_rate(from: &str, to: &str) -> Result<f64, GetExchangeR
     log::debug!("text: {}", text);
 
     save_raw_exchange_rate(&text);
-    
+
     let dict: Value = serde_json::from_str(&text).unwrap();
 
     let from_rate = match dict["rates"][from].as_f64() {
@@ -85,8 +89,7 @@ pub fn save_raw_exchange_rate(raw: &str) {
 
     let query = "INSERT INTO exchange_rate_api_raw (raw) VALUES (?)";
 
-    con.execute(query, &[raw])
-        .unwrap();
+    con.execute(query, &[raw]).unwrap();
 
     log::debug!("Saved raw exchange rate: {}", raw);
 }
@@ -100,8 +103,7 @@ pub fn save_llm_result(prompt: &str, result: &str) {
 
     let query = "INSERT INTO llm_result (prompt, result) VALUES (?, ?)";
 
-    con.execute(query, &[prompt, result])
-        .unwrap();
+    con.execute(query, &[prompt, result]).unwrap();
 
     log::debug!("Saved llm result: {} -> {}", prompt, result);
 }
@@ -134,8 +136,16 @@ pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 
     }
 }
 
-fn replace_template(template: &str, from: &str, to: &str, current_rate: f64, last_rate: f64, current_date: &str) -> String {
-    template.replace("{FROM}", from)
+fn replace_template(
+    template: &str,
+    from: &str,
+    to: &str,
+    current_rate: f64,
+    last_rate: f64,
+    current_date: &str,
+) -> String {
+    template
+        .replace("{FROM}", from)
         .replace("{TO}", to)
         .replace("{CURR}", &format!("{:.3}", current_rate))
         .replace("{PREV}", &format!("{:.3}", last_rate))
@@ -157,23 +167,42 @@ pub fn get_prompt(current_rate: f64, from: &str, to: &str) -> String {
     log::debug!("Threshold: {}", threshold);
 
     let prompt = match current_rate {
-        rate if (rate - last_rate).abs() < threshold => {
-            replace_template(environment::get_equal_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
-        },
-        rate if rate > last_rate => {
-            replace_template(environment::get_increase_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
-        },
-        rate if rate < last_rate => {
-            replace_template(environment::get_decrease_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
-        },
-        _ => {
-            replace_template(environment::get_equal_prompt_template().as_str(), &from, &to, current_rate, last_rate, &current_date)
-        },
+        rate if (rate - last_rate).abs() < threshold => replace_template(
+            environment::get_equal_prompt_template().as_str(),
+            &from,
+            &to,
+            current_rate,
+            last_rate,
+            &current_date,
+        ),
+        rate if rate > last_rate => replace_template(
+            environment::get_increase_prompt_template().as_str(),
+            &from,
+            &to,
+            current_rate,
+            last_rate,
+            &current_date,
+        ),
+        rate if rate < last_rate => replace_template(
+            environment::get_decrease_prompt_template().as_str(),
+            &from,
+            &to,
+            current_rate,
+            last_rate,
+            &current_date,
+        ),
+        _ => replace_template(
+            environment::get_equal_prompt_template().as_str(),
+            &from,
+            &to,
+            current_rate,
+            last_rate,
+            &current_date,
+        ),
     };
 
     log::debug!("Prompt: {}", prompt);
     prompt
-   
 }
 
 pub fn string_to_time_second(s: &str) -> u64 {
@@ -181,30 +210,68 @@ pub fn string_to_time_second(s: &str) -> u64 {
     let s = s.to_lowercase();
     // if string ends with 's', remove it and convert to integer
     if s.ends_with("s") {
-        s[..s.len()-1].parse::<u64>().unwrap()
+        s[..s.len() - 1].parse::<u64>().unwrap()
     }
     // if string ends with 'm', remove it and convert to integer
     else if s.ends_with("m") {
-        s[..s.len()-1].parse::<u64>().unwrap() * 60
+        s[..s.len() - 1].parse::<u64>().unwrap() * 60
     }
     // if string ends with 'h', remove it and convert to integer
     else if s.ends_with("h") {
-        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60
+        s[..s.len() - 1].parse::<u64>().unwrap() * 60 * 60
     }
     // if string ends with 'd', remove it and convert to integer
     else if s.ends_with("d") {
-        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24
+        s[..s.len() - 1].parse::<u64>().unwrap() * 60 * 60 * 24
     }
     // if string ends with 'w', remove it and convert to integer
     else if s.ends_with("w") {
-        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24 * 7
+        s[..s.len() - 1].parse::<u64>().unwrap() * 60 * 60 * 24 * 7
     }
     // if string ends with 'y', remove it and convert to integer
     else if s.ends_with("y") {
-        s[..s.len()-1].parse::<u64>().unwrap() * 60 * 60 * 24 * 365
+        s[..s.len() - 1].parse::<u64>().unwrap() * 60 * 60 * 24 * 365
     }
     // else convert to integer
     else {
         s.parse::<u64>().unwrap()
     }
+}
+
+pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
+    let rate_result = get_exchange_rate(from, to).await;
+
+    if rate_result.is_err() {
+        return format!("Error getting exchange rate from {} to {}", from, to);
+    }
+
+    let rate = rate_result.unwrap();
+    // let rate: f64 = 0.0;
+
+    let prompt = get_prompt(rate, from, to);
+
+    // keep track how much time it takes to generate the sentence
+    let start = std::time::Instant::now();
+
+    let llm_res = generate_sentence(prompt.as_str());
+
+    let res_without_prompt = llm_res.await;
+
+    let elapsed = start.elapsed();
+
+    let message_content = format!(
+        "{}\n\
+```
+1 {} = {} {}\n\
+Generated in {}.{:03} seconds\n\
+```",
+        res_without_prompt,
+        from,
+        rate,
+        to,
+        elapsed.as_secs(),
+        elapsed.subsec_millis(),
+    );
+
+    return message_content;
 }
