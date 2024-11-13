@@ -10,6 +10,7 @@ use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionRes
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::model::application::{Command, Interaction};
 
+use crate::commands::check_rate::handle_interaction;
 use crate::{commands, environment};
 use crate::llm::generate_sentence;
 use crate::utils::{get_exchange_rate, get_exchange_rate_message, get_prompt};
@@ -68,9 +69,12 @@ impl EventHandler for ExchangeRateBotEventHandler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         log::debug!("Interaction: {:?}", interaction);
 
-        if let Interaction::Command(command) = interaction {
-            let command_name = command.data.name.as_str();
-        }
+        // if let Interaction::Command(command) = interaction {
+        //     // let command_name = command.data.name.as_str();
+
+        //     return handle_interaction(&ctx, &interaction).await
+        // }
+        return handle_interaction(&ctx, &interaction).await
     }
 
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
