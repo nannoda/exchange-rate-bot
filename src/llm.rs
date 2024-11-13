@@ -6,9 +6,7 @@ use crate::environment::get_ollama_model;
 use crate::utils;
 
 /// Generate sentence using language model
-///
-/// Currently using Cohere API
-pub async fn generate_sentence(start: &str) -> String {
+pub async fn generate_sentence(user_prompt: &str) -> String {
     let base_url = environment::get_ollama_url();
 
     let url = base_url + "/api/chat";
@@ -21,7 +19,7 @@ pub async fn generate_sentence(start: &str) -> String {
             },
             {
                 "role": "user",
-                "content": start
+                "content": user_prompt
             }
         ],
         "stream": false
@@ -54,7 +52,7 @@ pub async fn generate_sentence(start: &str) -> String {
         }
     };
 
-    utils::save_llm_result(start, &text);
+    utils::save_llm_result(user_prompt, &text);
 
     log::debug!("text: {}", text);
 
