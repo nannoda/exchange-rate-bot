@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use rusqlite::Connection;
 use serde_json::Value;
 
@@ -256,7 +258,7 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
 
             format!(
                 "{}\n\
-                ```
+                ```\n\
                 1 {} = {} {}\n\
                 Generated in {}.{:03} seconds\n\
                 ```",
@@ -268,8 +270,16 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
                 elapsed.subsec_millis(),
             )
         },
-        Err(GetExchangeRateError::APIError) => "GetExchangeRateError::APIError".to_string(),
-        Err(GetExchangeRateError::ParseError) => "GetExchangeRateError::ParseError".to_string(),
-        _ => "Unknown exchange rate result".to_string(),
+        Err(GetExchangeRateError::APIError) => format!(
+            "Unable to retrieve exchange rate from {} to {}. This may be due to an API error. Please verify the API URL or API key. URL used: `{}`",
+            from,
+            to,
+            environment::get_exchange_rate_api_url()
+        ),
+        Err(GetExchangeRateError::ParseError) => format!(
+            "Exchange rate retrieval failed from {} to {} due to a parsing error. This might indicate an exceeded API usage limit or an unexpected response format.",
+            from,
+            to
+        ),
     }
 }

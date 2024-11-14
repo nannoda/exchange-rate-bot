@@ -10,14 +10,14 @@ async fn main() {
     match dotenv() {
         Ok(_) => {
             env_logger::init();
-            log::info!("Loaded .env file")},
+            log::debug!("Loaded .env file")},
         Err(_) => {
             env_logger::init();
-            log::info!("No .env file found")
+            log::debug!("No .env file found")
         }
     }
 
-    log::info!("Starting bot");
+    log::debug!("Starting bot");
 
     log::debug!("Log level: {}", log::max_level());
 
