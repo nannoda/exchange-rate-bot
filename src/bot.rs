@@ -1,4 +1,4 @@
-use serenity::all::{CommandDataOptionValue, CommandOptionType};
+use serenity::all::CommandDataOptionValue;
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use serenity::async_trait;
 use serenity::builder::{
-    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage,
+    CreateInteractionResponse, CreateInteractionResponseMessage,
 };
 use serenity::model::application::{Command, Interaction};
 use serenity::model::id::{ChannelId, GuildId};

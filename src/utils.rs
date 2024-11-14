@@ -1,4 +1,3 @@
-use std::fmt::format;
 
 use rusqlite::Connection;
 use serde_json::Value;

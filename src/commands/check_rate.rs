@@ -3,8 +3,7 @@ use serenity::all::{
 };
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
-// use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue, interaction::{Interaction, InteractionResponseType}};
-use log::{debug, warn};
+use log::debug;
 
 use crate::environment::{self};
 use crate::utils::get_exchange_rate_message;
