@@ -51,27 +51,27 @@ impl EventHandler for ExchangeRateBotEventHandler {
         send_ready_message(&ctx, &ready).await;
 
         // Retrieve existing global commands
-        let existing_commands = Command::get_global_commands(&ctx.http).await;
-        match existing_commands {
-            Ok(commands) => {
-                // Delete each existing command
-                for command in commands {
-                    if let Err(why) =
-                        Command::delete_global_command(&ctx.http, command.id)
-                            .await
-                    {
-                        log::warn!(
-                            "Failed to delete global command {}: {:?}",
-                            command.name,
-                            why
-                        );
-                    } else {
-                        log::info!("Deleted old global command: {}", command.name);
-                    }
-                }
-            }
-            Err(why) => log::warn!("Error retrieving global commands: {:?}", why),
-        }
+        // let existing_commands = Command::get_global_commands(&ctx.http).await;
+        // match existing_commands {
+        //     Ok(commands) => {
+        //         // Delete each existing command
+        //         for command in commands {
+        //             if let Err(why) =
+        //                 Command::delete_global_command(&ctx.http, command.id)
+        //                     .await
+        //             {
+        //                 log::warn!(
+        //                     "Failed to delete global command {}: {:?}",
+        //                     command.name,
+        //                     why
+        //                 );
+        //             } else {
+        //                 log::info!("Deleted old global command: {}", command.name);
+        //             }
+        //         }
+        //     }
+        //     Err(why) => log::warn!("Error retrieving global commands: {:?}", why),
+        // }
 
         let global_commands = Command::set_global_commands(
             &ctx.http,

@@ -14,12 +14,13 @@ pub fn run() -> String {
     **Exchange Rate Bot**\n\
     Version: `{}`\n\n\
     **Configuration**:\n\
-    - **Exchange From**: `{}`\n\
-    - **Exchange To**: `{}`\n\
-    - **Interval**: `{}` seconds\n\
-    - **Exchange Rate API URL**: `{}`\n\
-    - **OLLAMA Model**: `{}`\n\n\
-    **Channels**: {:?}\n\
+    ```\n\
+    - Exchange From: `{}`\n\
+    - Exchange To: `{}`\n\
+    - Interval: `{}` seconds\n\
+    - Exchange Rate API: `{}`\n\
+    - Ollama Model: `{}`\n\
+    ```
     ",
         environment::APP_VERSION,
         environment::get_exchange_from(),
@@ -27,6 +28,5 @@ pub fn run() -> String {
         environment::get_interval(),
         environment::get_exchange_rate_api_url(),
         environment::get_ollama_model(),
-        environment::get_channels()
     )
 }
