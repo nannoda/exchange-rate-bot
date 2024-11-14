@@ -1,43 +1,28 @@
+# Build stage
 FROM rust:alpine3.20 as builder
 
 # Add build dependencies
-RUN apk update
-RUN apk add build-base
-RUN apk add pkgconf openssl-dev musl-dev cmake make perl clang16 curl strace
-RUN apk add g++ gcc
-RUN apk add musl-dev
-RUN apk add openssl-dev
-RUN apk add openssl-libs-static
+RUN apk update && \
+    apk add --no-cache build-base pkgconf openssl-dev musl-dev cmake make perl clang16 curl
 
-# Set environment variables
-ENV OPENSSL_DIR=/usr
+# Set environment variables for static linking
 ENV OPENSSL_STATIC=1
+ENV OPENSSL_DIR=/usr
 
-# Copy . to /app
-COPY . /app
-
-# Change working directory to /app
+# Copy the source code into /app
 WORKDIR /app
+COPY . .
 
-# Build the project
-RUN cargo build --release
+# Build the project with static linking
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
-# Create build directory
-RUN mkdir -p /build
+# Runtime stage
+# Use scratch, an empty image, for a minimal final image
+FROM scratch
 
-# Copy the binary to /build
-RUN cp target/release/exchange-rate-bot /build
+# Copy the static binary from the builder
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/exchange-rate-bot /app/exchange-rate-bot
 
-# Create a new image from alpine
-FROM alpine:3.20
-
-RUN mkdir /app
-
-# Copy the binary from the builder stage to /app
-COPY --from=builder /build/exchange-rate-bot /app
-
-# Change working directory to /app
+# Set the working directory and start the application
 WORKDIR /app
-
-# Run the binary
 CMD ["./exchange-rate-bot"]
