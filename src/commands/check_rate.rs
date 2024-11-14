@@ -8,21 +8,43 @@ use crate::utils::get_exchange_rate_message;
 
 pub const COMMAND_NAME: &str = "exchange-check";
 
-// Function to register the exchange command with optional "from" and "to" parameters
 pub fn register() -> CreateCommand {
-    CreateCommand::new(COMMAND_NAME)
+    CreateCommand::new("exchange")
         .description("Check exchange rate between two currencies")
+        // Localization for command name and description
+        .name_localized("de", "wechselkurs")
+        .description_localized("de", "Überprüfen Sie den Wechselkurs zwischen zwei Währungen")
+        .name_localized("hi", "मुद्रा विनिमय")
+        .description_localized("hi", "दो मुद्राओं के बीच विनिमय दर की जाँच करें")
+        .name_localized("ja", "為替レート")
+        .description_localized("ja", "二つの通貨間の為替レートを確認します")
+        .name_localized("es", "tipo de cambio")
+        .description_localized("es", "Consulta el tipo de cambio entre dos monedas")
+        // "From" option localization
         .add_option(
-            CreateCommandOption::new(
-                CommandOptionType::String,
-                "from",
-                "Currency to convert from",
-            )
-            .required(false)
-            .set_autocomplete(true),
+            CreateCommandOption::new(CommandOptionType::String, "from", "Currency to convert from")
+                .name_localized("de", "von")
+                .description_localized("de", "Die Ausgangswährung für die Konvertierung")
+                .name_localized("hi", "मूल मुद्रा")
+                .description_localized("hi", "जिस मुद्रा से परिवर्तित करना है")
+                .name_localized("ja", "変換元")
+                .description_localized("ja", "変換する通貨")
+                .name_localized("es", "de")
+                .description_localized("es", "Moneda de origen para la conversión")
+                .required(false)
+                .set_autocomplete(true),
         )
+        // "To" option localization
         .add_option(
             CreateCommandOption::new(CommandOptionType::String, "to", "Currency to convert to")
+                .name_localized("de", "zu")
+                .description_localized("de", "Die Zielwährung für die Konvertierung")
+                .name_localized("hi", "लक्ष्य मुद्रा")
+                .description_localized("hi", "जिस मुद्रा में परिवर्तित करना है")
+                .name_localized("ja", "変換先")
+                .description_localized("ja", "変換される通貨")
+                .name_localized("es", "a")
+                .description_localized("es", "Moneda de destino para la conversión")
                 .required(false)
                 .set_autocomplete(true),
         )
