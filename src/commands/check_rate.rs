@@ -4,7 +4,6 @@ use serenity::all::{
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 // use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue, interaction::{Interaction, InteractionResponseType}};
 use log::{debug, warn};
-use serenity::http::Http;
 use serenity::prelude::*;
 
 use crate::environment::{self};
