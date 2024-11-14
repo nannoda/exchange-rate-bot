@@ -1,6 +1,4 @@
-use serenity::all::{
-    CommandOptionType
-};
+use serenity::all::CommandOptionType;
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
 use log::debug;

@@ -12,7 +12,7 @@ use serenity::builder::{
 use serenity::model::application::{Command, Interaction};
 use serenity::model::id::{ChannelId, GuildId};
 
-use crate::utils::{get_exchange_rate_message};
+use crate::utils::get_exchange_rate_message;
 use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
