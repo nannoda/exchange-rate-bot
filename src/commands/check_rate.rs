@@ -1,12 +1,10 @@
 use serenity::all::{
-    CommandDataOptionValue, CommandOptionType, CreateInteractionResponse,
-    CreateInteractionResponseMessage, Interaction,
+    CommandOptionType
 };
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
 // use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue, interaction::{Interaction, InteractionResponseType}};
 use log::{debug, warn};
-use serenity::prelude::*;
 
 use crate::environment::{self};
 use crate::utils::get_exchange_rate_message;
