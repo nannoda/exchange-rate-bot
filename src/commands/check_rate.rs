@@ -60,74 +60,16 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> String {
 }
 
 pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {
-    get_currency_choices(input)
-}
+    let mut response = CreateAutocompleteResponse::new();
+    let filtered_currencies = CURRENCIES
+        .iter()
+        .filter(|&&currency| currency.starts_with(&input.to_uppercase()))
+        .take(25); // Limit results to 25
 
-// Main function to handle interaction for the "exchange-check" command
-pub async fn handle_interaction(ctx: &Context, interaction: &Interaction) {
-    match interaction {
-        // Handle command execution
-        Interaction::Command(command) if command.data.name == COMMAND_NAME => {
-            // Get values from options or use defaults
-            let from: String = command
-                .data
-                .options
-                .iter()
-                .find(|opt| opt.name == "from")
-                .and_then(|opt| opt.value.as_str())
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| environment::get_exchange_from());
-
-            let to: String = command
-                .data
-                .options
-                .iter()
-                .find(|opt| opt.name == "to")
-                .and_then(|opt| opt.value.as_str())
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| environment::get_exchange_to());
-
-            debug!("from: {}, to: {}", from, to);
-
-            // Generate the exchange rate message
-            let exchange_rate_message = get_exchange_rate_message(from.as_str(), to.as_str()).await;
-
-            let data = CreateInteractionResponseMessage::new().content(exchange_rate_message);
-            let builder = CreateInteractionResponse::Message(data);
-
-            // Send the response message
-            if let Err(why) = command.create_response(&ctx.http, builder).await {
-                log::warn!("Error creating interaction response: {:?}", why);
-            }
-        }
-
-        // Handle autocomplete suggestions for "from" and "to" fields
-        Interaction::Autocomplete(autocomplete) if autocomplete.data.name == COMMAND_NAME => {
-            if autocomplete.data.name == COMMAND_NAME {
-                // Find the autocomplete option by iterating through all options
-                if let Some(autocomplete_option) =
-                    autocomplete.data.options.iter().find_map(|option| {
-                        if let CommandDataOptionValue::Autocomplete { value, .. } = &option.value {
-                            Some(value)
-                        } else {
-                            None
-                        }
-                    })
-                {
-                    // Generate the currency choices based on the user's input
-                    let choices = get_currency_choices(autocomplete_option);
-                    let response = CreateInteractionResponse::Autocomplete(choices);
-
-                    // Send the autocomplete response
-                    if let Err(why) = autocomplete.create_response(&ctx.http, response).await {
-                        warn!("Error creating autocomplete response: {:?}", why);
-                    }
-                }
-            }
-        }
-
-        _ => {}
+    for &currency in filtered_currencies {
+        response = response.add_string_choice(currency, currency);
     }
+    response
 }
 
 // Define a constant vector of currency codes
@@ -148,16 +90,3 @@ const CURRENCIES: &[&str] = &[
     "VND", "VUV", "WST", "XAF", "XAG", "XAU", "XCD", "XDR", "XOF", "XPF", "YER", "ZAR", "ZMK",
     "ZMW", "ZWL",
 ];
-
-fn get_currency_choices(input: &str) -> CreateAutocompleteResponse {
-    let mut response = CreateAutocompleteResponse::new();
-    let filtered_currencies = CURRENCIES
-        .iter()
-        .filter(|&&currency| currency.starts_with(&input.to_uppercase()))
-        .take(25); // Limit results to 25
-
-    for &currency in filtered_currencies {
-        response = response.add_string_choice(currency, currency);
-    }
-    response
-}

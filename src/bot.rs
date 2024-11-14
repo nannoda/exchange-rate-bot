@@ -12,9 +12,7 @@ use serenity::builder::{
 use serenity::model::application::{Command, Interaction};
 use serenity::model::id::{ChannelId, GuildId};
 
-use crate::commands::check_rate::handle_interaction;
-use crate::llm::generate_sentence;
-use crate::utils::{get_exchange_rate, get_exchange_rate_message, get_prompt};
+use crate::utils::{get_exchange_rate_message};
 use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
@@ -110,8 +108,6 @@ impl EventHandler for ExchangeRateBotEventHandler {
                 }
             }
         }
-
-        return handle_interaction(&ctx, &interaction).await;
     }
 
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {

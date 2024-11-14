@@ -130,7 +130,7 @@ pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 
     match rate() {
         Ok(rate) => rate,
         Err(e) => {
-            println!("Error getting exchange rate: {}", e);
+            log::warn!("Error getting exchange rate: {}", e);
             -1.0
         }
     }
@@ -241,37 +241,35 @@ pub fn string_to_time_second(s: &str) -> u64 {
 pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
     let rate_result = get_exchange_rate(from, to).await;
 
-    if rate_result.is_err() {
-        return format!("Error getting exchange rate from {} to {}", from, to);
+    match rate_result {
+        Err(GetExchangeRateError::APIError) => "GetExchangeRateError::APIError".to_string(),
+        Err(GetExchangeRateError::ParseError) => "GetExchangeRateError::ParseError".to_string(),
+        Ok(rate) => {
+            let prompt = get_prompt(rate, from, to);
+
+            // keep track how much time it takes to generate the sentence
+            let start = std::time::Instant::now();
+
+            let llm_res = generate_sentence(prompt.as_str());
+
+            let res_without_prompt = llm_res.await;
+
+            let elapsed = start.elapsed();
+
+            format!(
+                "{}\n\
+                ```
+                1 {} = {} {}\n\
+                Generated in {}.{:03} seconds\n\
+                ```",
+                res_without_prompt,
+                from,
+                rate,
+                to,
+                elapsed.as_secs(),
+                elapsed.subsec_millis(),
+            )
+        },
+        _ => "Unknown exchange rate result".to_string(),
     }
-
-    let rate = rate_result.unwrap();
-    // let rate: f64 = 0.0;
-
-    let prompt = get_prompt(rate, from, to);
-
-    // keep track how much time it takes to generate the sentence
-    let start = std::time::Instant::now();
-
-    let llm_res = generate_sentence(prompt.as_str());
-
-    let res_without_prompt = llm_res.await;
-
-    let elapsed = start.elapsed();
-
-    let message_content = format!(
-        "{}\n\
-```
-1 {} = {} {}\n\
-Generated in {}.{:03} seconds\n\
-```",
-        res_without_prompt,
-        from,
-        rate,
-        to,
-        elapsed.as_secs(),
-        elapsed.subsec_millis(),
-    );
-
-    return message_content;
 }
