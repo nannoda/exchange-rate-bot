@@ -6,9 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use serenity::async_trait;
-use serenity::builder::{
-    CreateInteractionResponse, CreateInteractionResponseMessage,
-};
+use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::model::application::{Command, Interaction};
 use serenity::model::id::{ChannelId, GuildId};
 
@@ -52,12 +50,42 @@ impl EventHandler for ExchangeRateBotEventHandler {
         log::info!("{} is connected!", ready.user.name);
         send_ready_message(&ctx, &ready).await;
 
-        let global_command =
-            Command::create_global_command(&ctx.http, commands::check_rate::register()).await;
+        // Retrieve existing global commands
+        let existing_commands = Command::get_global_commands(&ctx.http).await;
+        match existing_commands {
+            Ok(commands) => {
+                // Delete each existing command
+                for command in commands {
+                    if let Err(why) =
+                        Command::delete_global_command(&ctx.http, command.id)
+                            .await
+                    {
+                        log::warn!(
+                            "Failed to delete global command {}: {:?}",
+                            command.name,
+                            why
+                        );
+                    } else {
+                        log::info!("Deleted old global command: {}", command.name);
+                    }
+                }
+            }
+            Err(why) => log::warn!("Error retrieving global commands: {:?}", why),
+        }
 
-        if let Err(why) = global_command {
+        let global_commands = Command::set_global_commands(
+            &ctx.http,
+            vec![
+                commands::check_rate::register(),
+                commands::about::register(),
+            ],
+        )
+        .await;
+
+        if let Err(why) = global_commands {
             log::warn!("Error creating global command: {:?}", why);
         }
+
         log::info!("Slash commands created");
     }
 
@@ -72,6 +100,7 @@ impl EventHandler for ExchangeRateBotEventHandler {
                 commands::check_rate::COMMAND_NAME => {
                     Some(commands::check_rate::run(&command.data.options()).await)
                 }
+                commands::about::COMMAND_NAME => Some(commands::about::run()),
                 _ => Some("not implemented :(".to_string()),
             };
 

@@ -3,6 +3,11 @@ use rusqlite::Connection;
 use crate::utils::string_to_time_second;
 use std::env;
 
+pub const APP_VERSION: &str = match option_env!("APP_VERSION") {
+    Some(version) => version,
+    None => "UNKNOWN",
+};
+
 const CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY: &str = r#"
 CREATE TABLE IF NOT EXISTS exchange_rate
 (

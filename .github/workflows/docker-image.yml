@@ -14,7 +14,7 @@ jobs:
       - name: Set current date as env variable
         run: echo "NOW=$(date +'v%Y-%m-%d-%H%M%S')" >> $GITHUB_ENV
       - name: Echo current date
-        run: echo $NOW # Gives "2022-12-11T01:42:20"
+        run: echo $APP_VERSION # Gives "2022-12-11T01:42:20"
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -58,14 +58,15 @@ jobs:
         run: |
           docker buildx build . \
             --file Dockerfile \
-            --tag nannoda/exchange-rate-bot:$NOW \
+            --tag nannoda/exchange-rate-bot:$APP_VERSION \
             --tag nannoda/exchange-rate-bot:latest \
+            --build-arg APP_VERSION=$APP_VERSION \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache \
             --load
 
       - name: Push the Docker image (versioned)
-        run: docker image push nannoda/exchange-rate-bot:$NOW
+        run: docker image push nannoda/exchange-rate-bot:$APP_VERSION
 
       - name: Push the Docker image (latest)
         run: docker image push nannoda/exchange-rate-bot:latest
