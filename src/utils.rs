@@ -242,8 +242,6 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
     let rate_result = get_exchange_rate(from, to).await;
 
     match rate_result {
-        Err(GetExchangeRateError::APIError) => "GetExchangeRateError::APIError".to_string(),
-        Err(GetExchangeRateError::ParseError) => "GetExchangeRateError::ParseError".to_string(),
         Ok(rate) => {
             let prompt = get_prompt(rate, from, to);
 
@@ -270,6 +268,8 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> String {
                 elapsed.subsec_millis(),
             )
         },
+        Err(GetExchangeRateError::APIError) => "GetExchangeRateError::APIError".to_string(),
+        Err(GetExchangeRateError::ParseError) => "GetExchangeRateError::ParseError".to_string(),
         _ => "Unknown exchange rate result".to_string(),
     }
 }
