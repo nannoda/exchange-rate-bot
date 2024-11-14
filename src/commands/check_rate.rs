@@ -3,6 +3,7 @@ use serenity::all::{
     CreateInteractionResponseMessage, Interaction,
 };
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
+use serenity::model::application::{ResolvedOption, ResolvedValue};
 // use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue, interaction::{Interaction, InteractionResponseType}};
 use log::{debug, warn};
 use serenity::prelude::*;
@@ -10,7 +11,7 @@ use serenity::prelude::*;
 use crate::environment::{self};
 use crate::utils::get_exchange_rate_message;
 
-const COMMAND_NAME: &str = "exchange-check";
+pub const COMMAND_NAME: &str = "exchange-check";
 
 // Function to register the exchange command with optional "from" and "to" parameters
 pub fn register() -> CreateCommand {
@@ -30,6 +31,36 @@ pub fn register() -> CreateCommand {
                 .required(false)
                 .set_autocomplete(true),
         )
+}
+
+pub async fn run(options: &[ResolvedOption<'_>]) -> String {
+    let from = options
+        .iter()
+        .find(|opt| opt.name == "from")
+        .and_then(|opt| match &opt.value {
+            ResolvedValue::String(s) => Some(s),
+            _ => None,
+        })
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| environment::get_exchange_from());
+    let to = options
+        .iter()
+        .find(|opt| opt.name == "to")
+        .and_then(|opt| match &opt.value {
+            ResolvedValue::String(s) => Some(s),
+            _ => None,
+        })
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| environment::get_exchange_to());
+    debug!("from: {}, to: {}", from, to);
+    // Generate the exchange rate message
+    let exchange_rate_message = get_exchange_rate_message(from.as_str(), to.as_str()).await;
+
+    return exchange_rate_message;
+}
+
+pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {
+    get_currency_choices(input)
 }
 
 // Main function to handle interaction for the "exchange-check" command

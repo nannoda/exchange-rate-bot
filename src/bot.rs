@@ -1,4 +1,4 @@
-use serenity::all::CommandOptionType;
+use serenity::all::{CommandDataOptionValue, CommandOptionType};
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -6,16 +6,16 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use serenity::async_trait;
-use serenity::builder::{CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage};
-use serenity::model::id::{ChannelId, GuildId};
+use serenity::builder::{
+    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage,
+};
 use serenity::model::application::{Command, Interaction};
+use serenity::model::id::{ChannelId, GuildId};
 
 use crate::commands::check_rate::handle_interaction;
-use crate::{commands, environment};
 use crate::llm::generate_sentence;
 use crate::utils::{get_exchange_rate, get_exchange_rate_message, get_prompt};
-
-
+use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     let message_content = get_exchange_rate_message(from, to).await;
@@ -40,10 +40,7 @@ async fn send_message(ctx: &Context, content: &str) {
 
         let channel_id = ChannelId::new(channel);
 
-        let message = MessageBuilder::new()
-            .push(content)
-            .build();
-        
+        let message = MessageBuilder::new().push(content).build();
 
         if let Err(why) = channel_id.say(&ctx.http, &message).await {
             log::warn!("Error sending message: {:?}", why);
@@ -57,7 +54,8 @@ impl EventHandler for ExchangeRateBotEventHandler {
         log::info!("{} is connected!", ready.user.name);
         send_ready_message(&ctx, &ready).await;
 
-        let global_command = Command::create_global_command(&ctx.http, commands::check_rate::register()).await;
+        let global_command =
+            Command::create_global_command(&ctx.http, commands::check_rate::register()).await;
 
         if let Err(why) = global_command {
             log::warn!("Error creating global command: {:?}", why);
@@ -69,12 +67,51 @@ impl EventHandler for ExchangeRateBotEventHandler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         log::debug!("Interaction: {:?}", interaction);
 
-        // if let Interaction::Command(command) = interaction {
-        //     // let command_name = command.data.name.as_str();
+        if let Interaction::Command(command) = &interaction {
+            log::debug!("Received command interaction: {command:#?}");
 
-        //     return handle_interaction(&ctx, &interaction).await
-        // }
-        return handle_interaction(&ctx, &interaction).await
+            let content: Option<String> = match command.data.name.as_str() {
+                commands::check_rate::COMMAND_NAME => {
+                    Some(commands::check_rate::run(&command.data.options()).await)
+                }
+                _ => Some("not implemented :(".to_string()),
+            };
+
+            if let Some(content) = content {
+                let data = CreateInteractionResponseMessage::new().content(content);
+                let builder = CreateInteractionResponse::Message(data);
+                if let Err(why) = command.create_response(&ctx.http, builder).await {
+                    log::warn!("Cannot respond to slash command: {why}");
+                }
+            }
+        }
+
+        if let Interaction::Autocomplete(autocomplete) = &interaction {
+            if let Some(autocomplete_option) = autocomplete.data.options.iter().find_map(|option| {
+                if let CommandDataOptionValue::Autocomplete { value, .. } = &option.value {
+                    Some(value)
+                } else {
+                    None
+                }
+            }) {
+                let complete_result = match autocomplete.data.name.as_str() {
+                    commands::check_rate::COMMAND_NAME => {
+                        Some(commands::check_rate::autocomplete(&autocomplete_option))
+                    }
+                    _ => None,
+                };
+
+                if let Some(complete_result) = complete_result {
+                    let response = CreateInteractionResponse::Autocomplete(complete_result);
+                    // Send the autocomplete response
+                    if let Err(why) = autocomplete.create_response(&ctx.http, response).await {
+                        log::warn!("Error creating autocomplete response: {:?}", why);
+                    }
+                }
+            }
+        }
+
+        return handle_interaction(&ctx, &interaction).await;
     }
 
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
@@ -96,7 +133,8 @@ impl EventHandler for ExchangeRateBotEventHandler {
                 loop {
                     // We clone Context again here, because Arc is owned, so it moves to the
                     // new function.
-                    send_exchange_rate_message(Arc::clone(&ctx1), &exchange_from, &exchange_to).await;
+                    send_exchange_rate_message(Arc::clone(&ctx1), &exchange_from, &exchange_to)
+                        .await;
 
                     let interval = environment::get_interval();
                     log::debug!("Interval: {}", interval);
