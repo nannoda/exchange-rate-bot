@@ -1,7 +1,7 @@
 # Build stage
 FROM rust:alpine3.20 AS builder
 
-ARG APP_VERSION=DEVEL
+ARG APP_VERSION=DOCKER_UNKNOWN
 ENV APP_VERSION=${APP_VERSION}
 
 # Add dependencies in a single RUN command to reduce layers
