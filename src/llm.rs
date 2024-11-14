@@ -48,13 +48,16 @@ pub async fn generate_sentence(user_prompt: &str) -> String {
         Ok(body) => body,
         Err(e) => {
             log::error!("Failed to get response text: {}", e);
-            return format!("Error generating response: Failed to retrieve response text ({})", e);
+            return format!(
+                "Error generating response: Failed to retrieve response text ({})",
+                e
+            );
         }
     };
 
     utils::save_llm_result(user_prompt, &text);
 
-    log::debug!("text: {}", text);
+    log::debug!("text: {}", &text);
 
     let response: Value = match serde_json::from_str(&text) {
         Ok(parsed) => parsed,
@@ -66,7 +69,11 @@ pub async fn generate_sentence(user_prompt: &str) -> String {
 
     let content = response["message"]["content"]
         .as_str()
-        .unwrap_or("Error generating response: fail to find [message][content]");
+        .and_then(|content| Some(content.to_string()))
+        .unwrap_or(format!(
+            "Error generating response: fail to find [message][content]\nRaw JSON:\n```{}```",
+            &text
+        ));
 
-    return content.to_string();
+    return content;
 }
