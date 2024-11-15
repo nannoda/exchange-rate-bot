@@ -3,11 +3,13 @@ use reqwest;
 use serde_json::Value;
 
 use crate::environment::get_ollama_model;
-use crate::utils;
+use crate::{database, utils};
 
 /// Generate sentence using language model
 pub async fn generate_sentence(user_prompt: &str) -> String {
     let base_url = environment::get_ollama_url();
+
+    
 
     let url = base_url + "/api/chat";
     let json = serde_json::json!({
@@ -55,7 +57,7 @@ pub async fn generate_sentence(user_prompt: &str) -> String {
         }
     };
 
-    utils::save_llm_result(user_prompt, &text);
+    database::save_llm_result(user_prompt, &text);
 
     log::debug!("text: {}", &text);
 

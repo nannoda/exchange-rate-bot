@@ -1,7 +1,7 @@
-use serenity::all::CommandOptionType;
+use log::debug;
+use serenity::all::{CommandOptionType, CreateInteractionResponseMessage, CreateMessage};
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
-use log::debug;
 
 use crate::environment::{self};
 use crate::utils::get_exchange_rate_message;
@@ -13,44 +13,51 @@ pub fn register() -> CreateCommand {
         .description("Check exchange rate between two currencies")
         // Localization for command name and description
         .name_localized("de", "wechselkurs")
-        .description_localized("de", "Überprüfen Sie den Wechselkurs zwischen zwei Währungen")
-        .name_localized("hi", "मुद्रा विनिमय")
+        .description_localized(
+            "de",
+            "Überprüfen Sie den Wechselkurs zwischen zwei Währungen",
+        )
+        // .name_localized("hi", "मुद्रा विनिमय")
         .description_localized("hi", "दो मुद्राओं के बीच विनिमय दर की जाँच करें")
         .name_localized("ja", "為替レート")
         .description_localized("ja", "二つの通貨間の為替レートを確認します")
-        .name_localized("es", "tipo de cambio")
-        .description_localized("es", "Consulta el tipo de cambio entre dos monedas")
+        .name_localized("es-ES", "tipo-de-cambio")
+        .description_localized("es-ES", "Consulta el tipo de cambio entre dos monedas")
         // "From" option localization
         .add_option(
-            CreateCommandOption::new(CommandOptionType::String, "from", "Currency to convert from")
-                .name_localized("de", "von")
-                .description_localized("de", "Die Ausgangswährung für die Konvertierung")
-                .name_localized("hi", "मूल मुद्रा")
-                .description_localized("hi", "जिस मुद्रा से परिवर्तित करना है")
-                .name_localized("ja", "変換元")
-                .description_localized("ja", "変換する通貨")
-                .name_localized("es", "de")
-                .description_localized("es", "Moneda de origen para la conversión")
-                .required(false)
-                .set_autocomplete(true),
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "from",
+                "Currency to convert from",
+            )
+            .name_localized("de", "von")
+            .description_localized("de", "Die Ausgangswährung für die Konvertierung")
+            // .name_localized("hi", "मूल मुद्रा")
+            .description_localized("hi", "जिस मुद्रा से परिवर्तित करना है")
+            .name_localized("ja", "変換元")
+            .description_localized("ja", "変換する通貨")
+            .name_localized("es-ES", "de")
+            .description_localized("es-ES", "Moneda de origen para la conversión")
+            .required(false)
+            .set_autocomplete(true),
         )
         // "To" option localization
         .add_option(
             CreateCommandOption::new(CommandOptionType::String, "to", "Currency to convert to")
                 .name_localized("de", "zu")
                 .description_localized("de", "Die Zielwährung für die Konvertierung")
-                .name_localized("hi", "लक्ष्य मुद्रा")
+                // .name_localized("hi", "लक्ष्य मुद्रा")
                 .description_localized("hi", "जिस मुद्रा में परिवर्तित करना है")
                 .name_localized("ja", "変換先")
                 .description_localized("ja", "変換される通貨")
-                .name_localized("es", "a")
-                .description_localized("es", "Moneda de destino para la conversión")
+                .name_localized("es-ES", "a")
+                .description_localized("es-ES", "Moneda de destino para la conversión")
                 .required(false)
                 .set_autocomplete(true),
         )
 }
 
-pub async fn run(options: &[ResolvedOption<'_>]) -> String {
+pub async fn run(options: &[ResolvedOption<'_>]) -> CreateInteractionResponseMessage {
     let from = options
         .iter()
         .find(|opt| opt.name == "from")
@@ -73,7 +80,7 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> String {
     // Generate the exchange rate message
     let exchange_rate_message = get_exchange_rate_message(from.as_str(), to.as_str()).await;
 
-    return exchange_rate_message;
+    return CreateInteractionResponseMessage::new().content(exchange_rate_message.message);
 }
 
 pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {

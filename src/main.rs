@@ -4,6 +4,8 @@ mod utils;
 mod bot;
 mod llm;
 mod commands;
+mod database;
+mod exchange_rate;
 
 #[tokio::main]
 async fn main() {

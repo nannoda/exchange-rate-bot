@@ -1,4 +1,4 @@
-use serenity::all::CommandDataOptionValue;
+use serenity::all::{CommandDataOptionValue, CreateMessage};
 use serenity::prelude::*;
 use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -15,8 +15,7 @@ use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     let message_content = get_exchange_rate_message(from, to).await;
-
-    send_message(&ctx, &message_content).await;
+    send_text(&ctx, &message_content.message).await;
 }
 
 struct ExchangeRateBotEventHandler {
@@ -24,10 +23,10 @@ struct ExchangeRateBotEventHandler {
 }
 
 async fn send_ready_message(ctx: &Context, ready: &serenity::model::gateway::Ready) {
-    send_message(ctx, &format!("{} is back online!", ready.user.name)).await;
+    send_text(ctx, &format!("{} is back online!", ready.user.name)).await;
 }
 
-async fn send_message(ctx: &Context, content: &str) {
+async fn send_message(ctx: &Context, message: &CreateMessage) {
     let channels = environment::get_channels();
 
     for channel in channels {
@@ -36,12 +35,14 @@ async fn send_message(ctx: &Context, content: &str) {
 
         let channel_id = ChannelId::new(channel);
 
-        let message = MessageBuilder::new().push(content).build();
-
-        if let Err(why) = channel_id.say(&ctx.http, &message).await {
+        if let Err(why) = channel_id.send_message(&ctx.http, message.clone()).await {
             log::warn!("Error sending message: {:?}", why);
         }
     }
+}
+
+async fn send_text(ctx: &Context, text: &str) {
+    send_message(ctx, &CreateMessage::new().content(text)).await
 }
 
 #[async_trait]
@@ -49,29 +50,6 @@ impl EventHandler for ExchangeRateBotEventHandler {
     async fn ready(&self, ctx: Context, ready: serenity::model::gateway::Ready) {
         log::info!("{} is connected!", ready.user.name);
         send_ready_message(&ctx, &ready).await;
-
-        // Retrieve existing global commands
-        // let existing_commands = Command::get_global_commands(&ctx.http).await;
-        // match existing_commands {
-        //     Ok(commands) => {
-        //         // Delete each existing command
-        //         for command in commands {
-        //             if let Err(why) =
-        //                 Command::delete_global_command(&ctx.http, command.id)
-        //                     .await
-        //             {
-        //                 log::warn!(
-        //                     "Failed to delete global command {}: {:?}",
-        //                     command.name,
-        //                     why
-        //                 );
-        //             } else {
-        //                 log::info!("Deleted old global command: {}", command.name);
-        //             }
-        //         }
-        //     }
-        //     Err(why) => log::warn!("Error retrieving global commands: {:?}", why),
-        // }
 
         let global_commands = Command::set_global_commands(
             &ctx.http,
@@ -96,17 +74,16 @@ impl EventHandler for ExchangeRateBotEventHandler {
         if let Interaction::Command(command) = &interaction {
             log::debug!("Received command interaction: {command:#?}");
 
-            let content: Option<String> = match command.data.name.as_str() {
+            let content: Option<CreateInteractionResponseMessage> = match command.data.name.as_str() {
                 commands::check_rate::COMMAND_NAME => {
                     Some(commands::check_rate::run(&command.data.options()).await)
                 }
                 commands::about::COMMAND_NAME => Some(commands::about::run()),
-                _ => Some("not implemented :(".to_string()),
+                _ => Some(CreateInteractionResponseMessage::new().content("not implemented :(".to_string()) ),
             };
 
             if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
+                let builder = CreateInteractionResponse::Message(content);
                 if let Err(why) = command.create_response(&ctx.http, builder).await {
                     log::warn!("Cannot respond to slash command: {why}");
                 }

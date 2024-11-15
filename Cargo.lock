@@ -474,6 +474,7 @@ dependencies = [
  "rand",
  "reqwest 0.12.9",
  "rusqlite",
+ "serde",
  "serde_json",
  "serenity",
  "tokio",

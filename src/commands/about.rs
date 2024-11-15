@@ -1,4 +1,4 @@
-use serenity::all::{CreateCommand, CreateCommandOption};
+use serenity::all::{CreateCommand, CreateInteractionResponseMessage, CreateMessage, Message};
 
 use crate::environment;
 
@@ -8,8 +8,8 @@ pub const COMMAND_NAME: &str = "about";
 pub fn register() -> CreateCommand {
     CreateCommand::new(COMMAND_NAME).description("About the bot")
 }
-pub fn run() -> String {
-    format!(
+pub fn run() -> CreateInteractionResponseMessage {
+    let content = format!(
     "
     **Exchange Rate Bot**\n\
     Version: `{}`\n\n\
@@ -28,5 +28,7 @@ pub fn run() -> String {
         environment::get_interval(),
         environment::get_exchange_rate_api_url(),
         environment::get_ollama_model(),
-    )
+    );
+
+    return CreateInteractionResponseMessage::new().content(content);
 }
