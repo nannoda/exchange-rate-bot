@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use log::warn;
 use rusqlite::Connection;
 use serde_json::Value;
@@ -5,9 +7,9 @@ use serenity::all::CreateMessage;
 
 use crate::{
     environment::{self, get_exchange_rate_api_url},
-    exchange_rate::ExchangeRateMap,
+    exchange_rate::{get_exchange_rates, ExchangeRateMap},
+    llm::{generate::generate_sentence, prompt::get_prompt},
 };
-
 
 const DEFAULT_TIME_SECONDS: u64 = 86400;
 
@@ -116,49 +118,57 @@ pub struct ExchangeRateMessage {
 pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMessage {
     // let rate_result = get_exchange_rate(from, to).await;
 
-    // match rate_result {
-    //     Ok(rate) => {
-    //         let prompt = get_prompt(rate, from, to);
+    let rates = get_exchange_rates().await;
 
-    //         // keep track how much time it takes to generate the sentence
-    //         let start = std::time::Instant::now();
+    let msg_str: String = match rates {
+        Ok(rates) => {
+            let prompt = get_prompt(&rates, from, to);
 
-    //         let llm_res = generate_sentence(prompt.as_str());
+            let rate: f64 = rates
+                .get(0)
+                .cloned()
+                .unwrap_or_default()
+                .get_val(from, to)
+                .unwrap_or(-1.0);
 
-    //         let res_without_prompt = llm_res.await;
+            // keep track how much time it takes to generate the sentence
+            let start = std::time::Instant::now();
 
-    //         let elapsed = start.elapsed();
+            let llm_res = generate_sentence(prompt.as_str()).await;
 
-    //         format!(
-    //             "{}\n\
-    //             ```\n\
-    //             1 {} = {} {}\n\
-    //             Generated in {}.{:03} seconds\n\
-    //             ```",
-    //             res_without_prompt,
-    //             from,
-    //             rate,
-    //             to,
-    //             elapsed.as_secs(),
-    //             elapsed.subsec_millis(),
-    //         )
-    //     },
-    //     Err(GetExchangeRateError::APIError) => format!(
-    //         "Unable to retrieve exchange rate from {} to {}. This may be due to an API error. Please verify the API URL or API key. URL used: `{}`",
-    //         from,
-    //         to,
-    //         environment::get_exchange_rate_api_url()
-    //     ),
-    //     Err(GetExchangeRateError::ParseError) => format!(
-    //         "Exchange rate retrieval failed from {} to {} due to a parsing error. This might indicate an exceeded API usage limit or an unexpected response format.",
-    //         from,
-    //         to
-    //     ),
-    // }
+            let elapsed = start.elapsed();
+
+            format!(
+                "{}\n\
+                ```\n\
+                1 {} = {} {}\n\
+                Generated in {}.{:03} seconds\n\
+                ```",
+                llm_res,
+                from,
+                rate,
+                to,
+                elapsed.as_secs(),
+                elapsed.subsec_millis(),
+            )
+        }
+        Err(e) => {
+            match e {
+                crate::exchange_rate::GetRatesError::RemoteError(fetch_exchange_rate_error) => {
+                    format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n Error: {:?}", 
+                    environment::get_exchange_rate_api_url(), 
+                    fetch_exchange_rate_error)
+                }
+                crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => {
+                    format!("Error reading local database.\nError: {:?}", local_exchange_rate_error)
+                }
+            }
+        }
+    };
 
     // CreateMessage::new().content(format!("From {}, to {}", from, to))
     ExchangeRateMessage {
         graph: "H".to_string(),
-        message: format!("From {}, to {}", from, to),
+        message: msg_str,
     }
 }

@@ -17,10 +17,10 @@ pub fn render_template(
         .replace("{DATE}", current_date)
 }
 
-pub fn get_prompt(rates: Vec<ExchangeRateMap>, from: &str, to: &str) -> String {
-    let failed_rate = ExchangeRateMap::failed();
-    let curr_rate = rates.get(0).unwrap_or(&failed_rate);
-    let last_rate = rates.get(1).unwrap_or(&failed_rate);
+pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String {
+    // let failed_rate = ExchangeRateMap::failed();
+    let curr_rate = rates.get(0).cloned().unwrap_or_default();
+    let last_rate = rates.get(1).cloned().unwrap_or_default();
 
     log::debug!("Last rate: {}", last_rate);
     log::debug!("Curr rate: {}", curr_rate);

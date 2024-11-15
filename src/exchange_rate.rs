@@ -9,7 +9,7 @@ use crate::{
 };
 use std::{collections::HashMap, error::Error, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExchangeRateMap {
     pub success: bool,
     pub timestamp: DateTime<Utc>,
@@ -51,8 +51,8 @@ enum ValueError {
     MissingTo,
 }
 
-impl ExchangeRateMap {
-    pub fn failed() -> Self {
+impl Default for ExchangeRateMap {
+    fn default() -> Self {
         let map = HashMap::new();
         return ExchangeRateMap {
             success: false,
@@ -61,7 +61,9 @@ impl ExchangeRateMap {
             map,
         };
     }
+}
 
+impl ExchangeRateMap {
     pub fn get_val(&self, from: &str, to: &str) -> Option<f64> {
         let from_val = self.map.get(from);
         if from_val.is_none() {
@@ -199,7 +201,9 @@ pub async fn fetch_and_store_exchange_rate() -> Result<ExchangeRateMap, FetchExc
 }
 
 use rusqlite::Error as RusqliteError;
-enum LocalExchangeRateError {
+
+#[derive(Debug)]
+pub enum LocalExchangeRateError {
     SqlError(RusqliteError),
     ParseError(ExchangeRateError),
 }
@@ -225,7 +229,7 @@ pub fn get_local_exchange_rates() -> Result<Vec<ExchangeRateMap>, LocalExchangeR
     return Ok(rates);
 }
 
-enum GetRatesError {
+pub enum GetRatesError {
     RemoteError(FetchExchangeRateError),
     LocalError(LocalExchangeRateError),
 }
