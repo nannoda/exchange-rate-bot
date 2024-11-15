@@ -59,27 +59,28 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
     return threshold;
 }
 
+pub fn get_exchange_rate_api_url() -> String {
+    return get_and_set_env_var(
+        "EXCHANGE_RATE_API_URL",
+        "http://api.exchangeratesapi.io/v1/latest",
+    );
+}
+
 pub fn get_increase_prompt_template() -> String {
     return get_and_set_env_var(
         "INCREASE_PROMPT_TEMPLATE",
-        r#"Today is {DATE}. Provide a brief report for the public about an increase in exchange rates.
-- The exchange rate from {FROM} to {TO} has risen to {CURR}, which is higher than the previous rate of {PREV}.
+        r#"Today is {CURR_DATE}. Provide a brief report for the public about an increase in exchange rates.
+- Since {LAST_DATE}, the exchange rate from {FROM} to {TO} has risen to {CURR}, which is higher than the previous rate of {PREV}.
 - The increase in value is {DIFF}.
 Summarize this information clearly and concisely."#,
     );
 }
 
-pub fn get_exchange_rate_api_url() -> String {
-    return get_and_set_env_var(
-        "EXCHANGE_RATE_API_URL"
-        , "http://api.exchangeratesapi.io/v1/latest")
-}
-
 pub fn get_decrease_prompt_template() -> String {
     return get_and_set_env_var(
         "DECREASE_PROMPT_TEMPLATE",
-        r#"Today is {DATE}. Provide a brief report for the public about a decrease in exchange rates.
-- The exchange rate from {FROM} to {TO} has dropped to {CURR}, which is lower than the previous rate of {PREV}.
+        r#"Today is {CURR_DATE}. Provide a brief report for the public about a decrease in exchange rates.
+- Since {LAST_DATE}, the exchange rate from {FROM} to {TO} has dropped to {CURR}, which is lower than the previous rate of {PREV}.
 - The decrease in value is {DIFF}.
 Summarize this information clearly and concisely."#,
     );
@@ -88,8 +89,8 @@ Summarize this information clearly and concisely."#,
 pub fn get_equal_prompt_template() -> String {
     return get_and_set_env_var(
         "EQUAL_PROMPT_TEMPLATE",
-        r#"Today is {DATE}. Provide a brief report for the public on the current exchange rate.
-- The exchange rate from {FROM} to {TO} is {CURR}, which is approximately the same as the previous rate of {PREV}.
+        r#"Today is {CURR_DATE}. Provide a brief report for the public on the current exchange rate.
+- The exchange rate from {FROM} to {TO} is {CURR}, which is approximately the same as the previous rate of {PREV} on {LAST_DATE}.
 Summarize this information clearly and concisely."#,
     );
 }

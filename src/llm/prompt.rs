@@ -7,6 +7,7 @@ pub fn render_template(
     current_rate: f64,
     last_rate: f64,
     current_date: &str,
+    last_date: &str,
 ) -> String {
     template
         .replace("{FROM}", from)
@@ -14,7 +15,8 @@ pub fn render_template(
         .replace("{CURR}", &format!("{:.3}", current_rate))
         .replace("{PREV}", &format!("{:.3}", last_rate))
         .replace("{DIFF}", &format!("{:.3}", last_rate - current_rate))
-        .replace("{DATE}", current_date)
+        .replace("{CURR_DATE}", current_date)
+        .replace("{LAST_DATE}", last_date)
 }
 
 pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String {
@@ -30,7 +32,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     let last_val: f64 = last_rate.get_val(from, to).unwrap_or(-1.0);
 
     let curr_date = curr_rate.timestamp.format("%Y-%m-%d").to_string();
-
+    let last_date = last_rate.timestamp.format("%Y-%m-%d").to_string();
     log::debug!("Current rate value: {}", curr_val);
     log::debug!("Last rate value: {}", last_val);
 
@@ -49,6 +51,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
             curr_val,
             last_val,
             &curr_date,
+            &last_date,
         ),
         diff if diff > 0.0 => render_template(
             environment::get_increase_prompt_template().as_str(),
@@ -57,6 +60,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
             curr_val,
             last_val,
             &curr_date,
+            &last_date
         ),
         diff if diff < 0.0 => render_template(
             environment::get_decrease_prompt_template().as_str(),
@@ -65,6 +69,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
             curr_val,
             last_val,
             &curr_date,
+            &last_date
         ),
         _ => render_template(
             environment::get_equal_prompt_template().as_str(),
@@ -73,6 +78,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
             curr_val,
             last_val,
             &curr_date,
+            &last_date
         ),
     };
     log::debug!("Prompt: {}", prompt);

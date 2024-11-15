@@ -37,12 +37,12 @@ impl fmt::Display for ExchangeRateMap {
         )?;
 
         // Iterate through the rates and format them
-        for (currency, rate) in &self.map {
-            write!(f, " {}: {:.2},", currency, rate)?;
-        }
+        // for (currency, rate) in &self.map {
+        //     write!(f, " {}: {:.2},", currency, rate)?;
+        // }
 
         // Remove the trailing comma
-        write!(f, " }} }}")
+        write!(f, " ... }} }}")
     }
 }
 #[derive(Debug)]

@@ -1,5 +1,5 @@
 use log::debug;
-use serenity::all::{CommandOptionType, CreateInteractionResponseMessage, CreateMessage};
+use serenity::all::{CommandOptionType, CreateInteractionResponseMessage, CreateMessage, EditInteractionResponse};
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
 
@@ -9,7 +9,7 @@ use crate::utils::get_exchange_rate_message;
 pub const COMMAND_NAME: &str = "exchange-check";
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("exchange")
+    CreateCommand::new(COMMAND_NAME)
         .description("Check exchange rate between two currencies")
         // Localization for command name and description
         .name_localized("de", "wechselkurs")
@@ -57,7 +57,7 @@ pub fn register() -> CreateCommand {
         )
 }
 
-pub async fn run(options: &[ResolvedOption<'_>]) -> CreateInteractionResponseMessage {
+pub async fn run(options: &[ResolvedOption<'_>]) -> EditInteractionResponse {
     let from = options
         .iter()
         .find(|opt| opt.name == "from")
@@ -79,8 +79,7 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> CreateInteractionResponseMes
     debug!("from: {}, to: {}", from, to);
     // Generate the exchange rate message
     let exchange_rate_message = get_exchange_rate_message(from.as_str(), to.as_str()).await;
-
-    return CreateInteractionResponseMessage::new().content(exchange_rate_message.message);
+    return EditInteractionResponse::new().content(exchange_rate_message.message);
 }
 
 pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {

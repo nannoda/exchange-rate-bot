@@ -122,6 +122,12 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
 
     let msg_str: String = match rates {
         Ok(rates) => {
+            // Print out rates
+            for r in &rates {
+                log::debug!("{}",r);
+            }
+
+
             let prompt = get_prompt(&rates, from, to);
 
             let rate: f64 = rates

@@ -51,34 +51,6 @@ pub fn save_exchange_rate(from: &str, to: &str, rate: f64) {
     log::debug!("Saved exchange rate from {} to {} as {}", from, to, rate);
 }
 
-pub fn get_last_exchange_rate(from: &str, to: &str, offset: Option<i64>) -> f64 {
-    let db_file = environment::get_db_file();
-    let con = Connection::open(db_file).unwrap();
-
-    let query = "SELECT rate FROM exchange_rate WHERE from_currency = ? AND to_currency = ? ORDER BY time DESC LIMIT 1 OFFSET ?";
-
-    let mut stmt = con.prepare(query).unwrap();
-
-    let mut rows = stmt
-        .query(&[from, to, &offset.unwrap_or(0).to_string()])
-        .unwrap();
-
-    let mut rate = || -> Result<f64, rusqlite::Error> {
-        let option_row = rows.next()?;
-        let row = option_row.ok_or(rusqlite::Error::QueryReturnedNoRows)?;
-        let rate = row.get(0)?;
-        Ok(rate)
-    };
-
-    match rate() {
-        Ok(rate) => rate,
-        Err(e) => {
-            log::warn!("Error getting exchange rate: {}", e);
-            -1.0
-        }
-    }
-}
-
 pub fn get_local_last_seven_days_exchange_rate_json() -> Result<Vec<String>, RusqliteError> {
     let db_file = environment::get_db_file();
     let con = Connection::open(db_file)?;

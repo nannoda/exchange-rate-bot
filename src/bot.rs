@@ -1,4 +1,4 @@
-use serenity::all::{CommandDataOptionValue, CreateMessage};
+use serenity::all::{CommandDataOptionValue, CreateMessage, EditInteractionResponse};
 use serenity::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -73,18 +73,39 @@ impl EventHandler for ExchangeRateBotEventHandler {
         if let Interaction::Command(command) = &interaction {
             log::debug!("Received command interaction: {command:#?}");
 
-            let content: Option<CreateInteractionResponseMessage> = match command.data.name.as_str() {
+            // Step 1: Acknowledge with a deferred response, allowing more time for processing
+            if let Err(why) = command
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Defer(
+                        CreateInteractionResponseMessage::new().content("Waiting..."),
+                    ),
+                )
+                .await
+            {
+                log::warn!("Failed to acknowledge interaction: {why}");
+                return; // Exit if the initial response fails
+            }
+
+            let content: Option<EditInteractionResponse> = match command.data.name.as_str()
+            {
                 commands::check_rate::COMMAND_NAME => {
                     Some(commands::check_rate::run(&command.data.options()).await)
                 }
                 commands::about::COMMAND_NAME => Some(commands::about::run()),
-                _ => Some(CreateInteractionResponseMessage::new().content("not implemented :(".to_string()) ),
+                _ => Some(
+                    EditInteractionResponse::new()
+                        .content("not implemented :(".to_string()),
+                ),
             };
 
             if let Some(content) = content {
-                let builder = CreateInteractionResponse::Message(content);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    log::warn!("Cannot respond to slash command: {why}");
+                // Step 3: Edit the deferred response to send the final result
+                if let Err(why) = command
+                    .edit_response(&ctx.http, content)
+                    .await
+                {
+                    log::warn!("Cannot send final response to slash command: {why}");
                 }
             }
         }
