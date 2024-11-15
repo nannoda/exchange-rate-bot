@@ -1,5 +1,8 @@
 use log::debug;
-use serenity::all::{CommandOptionType, CreateInteractionResponseMessage, CreateMessage, EditInteractionResponse};
+use serenity::all::{
+    CommandOptionType, CreateAttachment, CreateEmbed, CreateInteractionResponseMessage,
+    CreateMessage, EditInteractionResponse,
+};
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};
 
@@ -78,8 +81,11 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> EditInteractionResponse {
         .unwrap_or_else(|| environment::get_exchange_to());
     debug!("from: {}, to: {}", from, to);
     // Generate the exchange rate message
-    let exchange_rate_message = get_exchange_rate_message(from.as_str(), to.as_str()).await;
-    return EditInteractionResponse::new().content(exchange_rate_message.message);
+    let msg = get_exchange_rate_message(from.as_str(), to.as_str()).await;
+    return EditInteractionResponse::new()
+        .content(msg.message)
+        // .embed(CreateEmbed::new().image("attachment://graph.svg"))
+        .new_attachment(CreateAttachment::bytes(msg.graph, "graph.png"));
 }
 
 pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {

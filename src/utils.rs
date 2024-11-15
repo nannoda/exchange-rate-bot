@@ -1,14 +1,18 @@
 use std::borrow::Borrow;
 
 use log::warn;
+use plotters::prelude::*;
 use rusqlite::Connection;
 use serde_json::Value;
 use serenity::all::CreateMessage;
 
+
+use plotters::style::text_anchor::{HPos, Pos, VPos};
+use image::{ColorType, ExtendedColorType, ImageBuffer, ImageEncoder, RgbImage};
+
+
 use crate::{
-    environment::{self, get_exchange_rate_api_url},
-    exchange_rate::{get_exchange_rates, ExchangeRateMap},
-    llm::{generate::generate_sentence, prompt::get_prompt},
+    database::save_exchange_rate, environment::{self, get_exchange_rate_api_url}, exchange_rate::{get_exchange_rates, ExchangeRateMap}, llm::{generate::generate_sentence, prompt::get_prompt}
 };
 
 const DEFAULT_TIME_SECONDS: u64 = 86400;
@@ -110,9 +114,66 @@ pub fn string_to_time_second(s: &str) -> u64 {
     }
 }
 
+fn get_error_png(error_msg: &str) -> Vec<u8> {
+    let width = 800;
+    let height = 200;
+    let font_size = 60;
+
+    // Calculate the correct buffer size (width * height * 3 for RGB)
+    let buffer_size = (width * height * 3) as usize;
+    let mut buffer = vec![0; buffer_size];
+
+  
+    {
+        // Create a bitmap backend to draw to the buffer
+        let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+
+        // Define the text style
+        let text_style = ("sans-serif", font_size).into_font().color(&RED);
+
+        // Draw the error message text
+        root.draw_text(error_msg, &text_style, (30, height as i32 / 2 -(font_size/2) ))
+            .unwrap();
+
+        // Draw a border around the error message
+        root.draw(&Rectangle::new(
+            [(10 as i32, 10 as i32), (width as i32 - 10, height as i32 - 10)],
+            ShapeStyle {
+                color: RED.to_rgba(),
+                filled: false,
+                stroke_width: 3,
+            },
+        ))
+        .unwrap();
+
+        // Finalize the drawing area
+        root.present().unwrap();
+    }
+
+    // Convert the raw buffer into an ImageBuffer (for PNG encoding)
+    let img = RgbImage::from_raw(width, height, buffer)
+        .expect("Failed to create image from raw buffer");
+  // Encode the image into PNG format
+  let mut png_data = Vec::new();
+  {
+      let encoder = image::codecs::png::PngEncoder::new(&mut png_data);
+      encoder
+          .write_image(
+              &img,
+              width,
+              height,
+              ExtendedColorType::Rgb8,
+          )
+          .expect("Failed to encode PNG");
+  }
+    png_data
+}
+
+
 pub struct ExchangeRateMessage {
     pub message: String,
-    pub graph: String,
+    pub graph: Vec<u8>,
 }
 
 pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMessage {
@@ -120,13 +181,13 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
 
     let rates = get_exchange_rates().await;
 
-    let msg_str: String = match rates {
+    match rates {
         Ok(rates) => {
             // Print out rates
             for r in &rates {
                 log::debug!("{}",r);
             }
-
+            
 
             let prompt = get_prompt(&rates, from, to);
 
@@ -137,6 +198,9 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
                 .get_val(from, to)
                 .unwrap_or(-1.0);
 
+            // Save rate for backward compatibility reason.
+            save_exchange_rate(from, to, rate);
+
             // keep track how much time it takes to generate the sentence
             let start = std::time::Instant::now();
 
@@ -144,37 +208,38 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
 
             let elapsed = start.elapsed();
 
-            format!(
-                "{}\n\
-                ```\n\
-                1 {} = {} {}\n\
-                Generated in {}.{:03} seconds\n\
-                ```",
-                llm_res,
-                from,
-                rate,
-                to,
-                elapsed.as_secs(),
-                elapsed.subsec_millis(),
-            )
+            ExchangeRateMessage{
+                message: format!(
+                    "{}\n\
+                    ```\n\
+                    1 {} = {} {}\n\
+                    Generated in {}.{:03} seconds\n\
+                    ```",
+                    llm_res,
+                    from,
+                    rate,
+                    to,
+                    elapsed.as_secs(),
+                    elapsed.subsec_millis(),
+                ),
+                graph: get_error_png("Not impelimented")
+            }
+           
         }
         Err(e) => {
             match e {
-                crate::exchange_rate::GetRatesError::RemoteError(fetch_exchange_rate_error) => {
-                    format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n Error: {:?}", 
+                crate::exchange_rate::GetRatesError::RemoteError(fetch_exchange_rate_error) => ExchangeRateMessage{
+                    message:format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n Error: {:?}", 
                     environment::get_exchange_rate_api_url(), 
-                    fetch_exchange_rate_error)
-                }
-                crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => {
-                    format!("Error reading local database.\nError: {:?}", local_exchange_rate_error)
+                    fetch_exchange_rate_error),
+                    graph: get_error_png("Remote Error")  
+                },
+                crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => ExchangeRateMessage{
+                    message: format!("Error reading local database.\nError: {:?}", local_exchange_rate_error),
+                    graph: get_error_png("Local Error")
                 }
             }
         }
-    };
-
-    // CreateMessage::new().content(format!("From {}, to {}", from, to))
-    ExchangeRateMessage {
-        graph: "H".to_string(),
-        message: msg_str,
     }
+
 }
