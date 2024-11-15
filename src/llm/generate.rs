@@ -2,8 +2,8 @@ use crate::environment::{self, get_system_prompt};
 use reqwest;
 use serde_json::Value;
 
+use crate::database;
 use crate::environment::get_ollama_model;
-use crate::{database, utils};
 
 /// Generate sentence using language model
 pub async fn generate_sentence(user_prompt: &str) -> String {

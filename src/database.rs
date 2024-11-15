@@ -96,8 +96,6 @@ pub fn get_local_last_seven_days_exchange_rate_json() -> Result<Vec<String>, Rus
         .as_secs()
         - 7 * 24 * 60 * 60; // 7 days ago in seconds
 
-    // // Prepare the SQL query with a LIMIT clause
-    // let query = "SELECT raw FROM exchange_rate_api_raw ORDER BY time DESC LIMIT ?";
     // Prepare the SQL query to get data from the last 7 days
     let query = "SELECT raw FROM exchange_rate_api_raw WHERE time >= ? ORDER BY time DESC";
 

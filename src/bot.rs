@@ -1,6 +1,5 @@
 use serenity::all::{CommandDataOptionValue, CreateMessage};
 use serenity::prelude::*;
-use serenity::utils::MessageBuilder;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
