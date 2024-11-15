@@ -8,6 +8,7 @@ pub const COMMAND_NAME: &str = "about";
 pub fn register() -> CreateCommand {
     CreateCommand::new(COMMAND_NAME).description("About the bot")
 }
+
 pub fn run() -> EditInteractionResponse {
     let content = format!(
     "

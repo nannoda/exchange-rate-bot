@@ -55,7 +55,7 @@ pub async fn generate_sentence(user_prompt: &str) -> String {
         }
     };
 
-    database::save_llm_result(user_prompt, &text);
+    database::llm_result::save_llm_result(user_prompt, &text);
 
     log::debug!("text: {}", &text);
 

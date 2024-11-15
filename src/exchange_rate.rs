@@ -1,11 +1,17 @@
-use chrono::{DateTime, ParseError, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, ParseError, TimeZone, Utc};
 use log::debug;
 use rusqlite::Connection;
 use serde_json::Value;
+use serenity::futures::future::ok;
+use thiserror::Error;
 
 use crate::{
-    database::{get_local_last_seven_days_exchange_rate_json, save_raw_exchange_rate_result},
+    database::{
+        exchange_rate_api_raw::save_raw_exchange_rate_result,
+        historical_data::get_historical_exchange_rate_db,
+    },
     environment,
+    exchange_rate_api::{fetch_exchange_rate, FetchExchangeRateError, FetchMode},
 };
 use std::{collections::HashMap, error::Error, fmt};
 
@@ -17,16 +23,26 @@ pub struct ExchangeRateMap {
     pub map: HashMap<String, f64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ExchangeRateError {
-    ParseError(serde_json::Error),
-    ParseDateTimeError,
-    InvalidResponse(String),
-    ApiError(String, String), // Error code and info message
-    MissingField(String),     // Missing expected fields
-    InvalidData(String),      // Invalid data or format
-}
+    #[error("Failed to parse JSON: {0}")]
+    ParseError(#[from] serde_json::Error),
 
+    #[error("Failed to parse datetime")]
+    ParseDateTimeError,
+
+    #[error("Invalid response: {0}")]
+    InvalidResponse(String),
+
+    #[error("API error (code: {0}, message: {1})")]
+    ApiError(String, String),
+
+    #[error("Missing field: {0}")]
+    MissingField(String),
+
+    #[error("Invalid data: {0}")]
+    InvalidData(String),
+}
 // Implement Display trait for ExchangeRate
 impl fmt::Display for ExchangeRateMap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -44,11 +60,6 @@ impl fmt::Display for ExchangeRateMap {
         // Remove the trailing comma
         write!(f, " ... }} }}")
     }
-}
-#[derive(Debug)]
-enum ValueError {
-    MissingFrom,
-    MissingTo,
 }
 
 impl Default for ExchangeRateMap {
@@ -156,50 +167,6 @@ impl ExchangeRateMap {
     }
 }
 
-#[derive(Debug)]
-pub enum FetchExchangeRateError {
-    RequestError(String),
-    NetworkError(String),
-    ResponseBodyError(String),
-    ParseError(ExchangeRateError),
-}
-
-/// This function fetches and stores the exchange rate on the DB
-pub async fn fetch_and_store_exchange_rate() -> Result<ExchangeRateMap, FetchExchangeRateError> {
-    let api_key = environment::get_exchange_rate_api_key();
-    let api_url = environment::get_exchange_rate_api_url();
-
-    let result = reqwest::get(format!("{}?access_key={}", api_url, api_key)).await;
-
-    if let Err(e) = &result {
-        return Err(FetchExchangeRateError::NetworkError(e.to_string()));
-    }
-
-    let response = result.unwrap();
-
-    if !response.status().is_success() {
-        return Err(FetchExchangeRateError::RequestError(format!(
-            "Request failed with status: {}",
-            response.status()
-        )));
-    }
-
-    // Safely attempt to read the response body
-    let text = response
-        .text()
-        .await
-        .map_err(|e| FetchExchangeRateError::ResponseBodyError(e.to_string()))?;
-
-    log::debug!("text: {}", text);
-
-    save_raw_exchange_rate_result(&text);
-
-    match ExchangeRateMap::from_json(&text) {
-        Ok(r) => Ok(r),
-        Err(err) => Err(FetchExchangeRateError::ParseError(err)),
-    }
-}
-
 use rusqlite::Error as RusqliteError;
 
 #[derive(Debug)]
@@ -208,51 +175,42 @@ pub enum LocalExchangeRateError {
     ParseError(ExchangeRateError),
 }
 
-/// Get exchange rates from local database
-pub fn get_local_exchange_rates() -> Result<Vec<ExchangeRateMap>, LocalExchangeRateError> {
-    let local_rates_raw = match get_local_last_seven_days_exchange_rate_json() {
-        Ok(raws) => raws,
-        Err(err) => return Err(LocalExchangeRateError::SqlError(err)),
-    };
-
-    let mut rates = Vec::new();
-
-    for rate_raw in local_rates_raw.iter() {
-        match ExchangeRateMap::from_json(&rate_raw) {
-            Ok(rate) => {
-                rates.push(rate);
-            }
-            Err(err) => debug!("Error parsing rate raw: {:?}", &err),
-        }
-    }
-
-    return Ok(rates);
-}
-
 pub enum GetRatesError {
     RemoteError(FetchExchangeRateError),
-    LocalError(LocalExchangeRateError),
+}
+
+pub async fn get_exchange_rate_from_date(
+    date: &NaiveDate,
+) -> Result<ExchangeRateMap, GetRatesError> {
+    match get_historical_exchange_rate_db(date) {
+        Some(map) => return Ok(map),
+        None => (),
+    };
+    match fetch_exchange_rate(FetchMode::Date(date)).await {
+        Ok(map) => return Ok(map),
+        Err(err) => return Err(GetRatesError::RemoteError(err)),
+    }
 }
 
 pub async fn get_exchange_rates() -> Result<Vec<ExchangeRateMap>, GetRatesError> {
-    let old_rates = match get_local_exchange_rates() {
-        Ok(rates) => rates,
-        Err(e) => return Err(GetRatesError::LocalError(e)),
-    };
-
-    let new_rate = match fetch_and_store_exchange_rate().await {
-        Ok(rate) => rate,
-        Err(e) => return Err(GetRatesError::RemoteError(e)),
-    };
+    // Get today's date
+    let today = Local::now().date_naive();
 
     let mut rates = Vec::new();
 
-    log::debug!("New Rate: {:?}", &new_rate);
-    rates.push(new_rate);
+    // Get the current exchange rate
+    match fetch_exchange_rate(FetchMode::Latest).await {
+        Ok(map) => rates.push(map),
+        Err(err) => return Err(GetRatesError::RemoteError(err)),
+    }
 
-    for old_rate in old_rates {
-        log::debug!("Old rate: {:?}", &old_rate);
-        rates.push(old_rate);
+    // Get for the past 7 days
+    for i in 1..7 {
+        let date = today - Duration::days(i);
+        match get_exchange_rate_from_date(&date).await {
+            Ok(map) => rates.push(map),
+            Err(err) => return Err(err),
+        }
     }
 
     return Ok(rates);

@@ -24,3 +24,6 @@ env_logger = "0.11.1"
 serde = "1.0.215"
 plotters = "0.3.7"
 image = "0.25.5"
+thiserror = "2.0.3"
+[build-dependencies]
+chrono = "0.4"

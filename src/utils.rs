@@ -11,8 +11,7 @@ use plotters::style::text_anchor::{HPos, Pos, VPos};
 use image::{ColorType, ExtendedColorType, ImageBuffer, ImageEncoder, RgbImage};
 
 
-use crate::{
-    database::save_exchange_rate, environment::{self, get_exchange_rate_api_url}, exchange_rate::{get_exchange_rates, ExchangeRateMap}, llm::{generate::generate_sentence, prompt::get_prompt}
+use crate::{ database::exchange_rate::save_exchange_rate, environment::{self, get_exchange_rate_api_url}, exchange_rate::{get_exchange_rates, ExchangeRateMap}, llm::{generate::generate_sentence, prompt::get_prompt}
 };
 
 const DEFAULT_TIME_SECONDS: u64 = 86400;
@@ -229,15 +228,15 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
         Err(e) => {
             match e {
                 crate::exchange_rate::GetRatesError::RemoteError(fetch_exchange_rate_error) => ExchangeRateMessage{
-                    message:format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n Error: {:?}", 
+                    message:format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n`Error: {:?}`", 
                     environment::get_exchange_rate_api_url(), 
                     fetch_exchange_rate_error),
                     graph: get_error_png("Remote Error")  
                 },
-                crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => ExchangeRateMessage{
-                    message: format!("Error reading local database.\nError: {:?}", local_exchange_rate_error),
-                    graph: get_error_png("Local Error")
-                }
+                // crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => ExchangeRateMessage{
+                //     message: format!("Error reading local database.\n`Error: {:?}`", local_exchange_rate_error),
+                //     graph: get_error_png("Local Error")
+                // }
             }
         }
     }

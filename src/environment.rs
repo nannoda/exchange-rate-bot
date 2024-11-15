@@ -5,7 +5,19 @@ use std::env;
 
 pub const APP_VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
-    None => "UNKNOWN",
+    None => match option_env!("FALLBACK_APP_VERSION") {
+        Some(build_timestamp) => build_timestamp,
+        None => {
+            #[cfg(debug_assertions)]
+            {
+                "UNKNOWN(DEBUG)"
+            }
+            #[cfg(not(debug_assertions))]
+            {
+                "UNKNOWN(RELEASE)"
+            }
+        }
+    },
 };
 
 const CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY: &str = r#"
@@ -34,6 +46,13 @@ CREATE TABLE IF NOT EXISTS llm_result
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 "#;
+
+const CREATE_HISTORICAL_DATA_TABLE_QUERY: &str = r#"
+CREATE TABLE IF NOT EXISTS json_data (
+    json TEXT NOT NULL,                  -- Text field to store JSON data
+    date DATE NOT NULL,                  -- Date field to store the date of the JSON data
+    insert_at DATETIME DEFAULT CURRENT_TIMESTAMP -- DateTime to store insertion timestamp
+);"#;
 
 pub fn get_interval() -> u64 {
     let interval_str = get_and_set_env_var("INTERVAL", "24h");
@@ -197,6 +216,7 @@ fn ensure_db() {
     con.execute(CREATE_EXCHANGE_RATE_API_RAW_TABLE_QUERY, [])
         .unwrap();
     con.execute(CREATE_LLM_RESULT_TABLE_QUERY, []).unwrap();
+    con.execute(CREATE_HISTORICAL_DATA_TABLE_QUERY, []).unwrap();
 }
 
 /// Ensure environment variables are set
