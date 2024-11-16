@@ -10,7 +10,7 @@ use crate::{
         exchange_rate_api_raw::save_raw_exchange_rate_result,
         historical_data::get_historical_exchange_rate_db,
     },
-    environment,
+    environment::{self, DAYS_TO_CHECK},
     exchange_rate_api::{fetch_exchange_rate, FetchExchangeRateError, FetchMode},
 };
 use std::{collections::HashMap, error::Error, fmt};
@@ -19,6 +19,7 @@ use std::{collections::HashMap, error::Error, fmt};
 pub struct ExchangeRateMap {
     pub success: bool,
     pub timestamp: DateTime<Utc>,
+    pub date: NaiveDate,
     pub base: String,
     pub map: HashMap<String, f64>,
 }
@@ -30,6 +31,9 @@ pub enum ExchangeRateError {
 
     #[error("Failed to parse datetime")]
     ParseDateTimeError,
+
+    #[error("Failed to parse date")]
+    ParseDateError,
 
     #[error("Invalid response: {0}")]
     InvalidResponse(String),
@@ -64,12 +68,12 @@ impl fmt::Display for ExchangeRateMap {
 
 impl Default for ExchangeRateMap {
     fn default() -> Self {
-        let map = HashMap::new();
         return ExchangeRateMap {
             success: false,
             timestamp: Utc::now(),
+            date: Utc::now().date_naive(),
             base: "EUR".to_string(),
-            map,
+            map: HashMap::new(),
         };
     }
 }
@@ -134,6 +138,17 @@ impl ExchangeRateMap {
             })
             .ok_or_else(|| ExchangeRateError::MissingField("timestamp".to_string()))??;
 
+        let date = parsed
+            .get("date")
+            .and_then(|t| t.as_str())
+            .and_then(|date_str| {
+                Some(
+                    NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        .map_err(|_| ExchangeRateError::ParseDateError),
+                )
+            })
+            .ok_or_else(|| ExchangeRateError::MissingField("date".to_string()))??;
+
         let base = parsed
             .get("base")
             .and_then(|b| b.as_str())
@@ -162,6 +177,7 @@ impl ExchangeRateMap {
             success,
             timestamp,
             base,
+            date,
             map: rate_map,
         })
     }
@@ -205,7 +221,7 @@ pub async fn get_exchange_rates() -> Result<Vec<ExchangeRateMap>, GetRatesError>
     }
 
     // Get for the past 7 days
-    for i in 1..7 {
+    for i in 1..DAYS_TO_CHECK {
         let date = today - Duration::days(i);
         match get_exchange_rate_from_date(&date).await {
             Ok(map) => rates.push(map),

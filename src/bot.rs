@@ -1,4 +1,4 @@
-use serenity::all::{CommandDataOptionValue, CreateMessage, EditInteractionResponse};
+use serenity::all::{CommandDataOptionValue, CreateAttachment, CreateMessage, EditInteractionResponse};
 use serenity::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -13,8 +13,9 @@ use crate::utils::get_exchange_rate_message;
 use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
-    let message_content = get_exchange_rate_message(from, to).await;
-    send_text(&ctx, &message_content.message).await;
+    let msg = get_exchange_rate_message(from, to).await;
+    // send_text(&ctx, &message_content.message).await;
+    send_message(&ctx, &CreateMessage::new().content(msg.message).add_file(CreateAttachment::bytes(msg.graph, "graph.png"))).await;
 }
 
 struct ExchangeRateBotEventHandler {

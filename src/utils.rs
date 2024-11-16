@@ -169,6 +169,96 @@ fn get_error_png(error_msg: &str) -> Vec<u8> {
     png_data
 }
 
+use chrono::NaiveDate;
+use plotters::prelude::*;
+use std::collections::HashMap;
+
+// Assuming your existing imports and struct definitions...
+
+fn get_trend_graph(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> Vec<u8> {
+    let width = 800;
+    let height = 400;
+
+    // Extract the dates and exchange rates for the `from` and `to` currencies
+    let mut data: Vec<(NaiveDate, f64)> = vec![];
+    for rate_map in rates {
+        if let Some(exchange_rate) = rate_map.get_val(from, to) {
+            data.push((rate_map.date, exchange_rate));
+        }
+    }
+
+    if data.is_empty() {
+        panic!("No exchange rate data available for the given currencies.");
+    }
+
+    // Sort data by date
+    data.sort_by_key(|(date, _)| *date);
+
+    // Prepare the buffer for the graph
+    let mut buffer = vec![0; (width * height * 3) as usize];
+
+    {
+        // Create a drawing area using a bitmap backend
+        let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+
+        let max_rate = data.iter().map(|(_, rate)| *rate).fold(f64::MIN, f64::max);
+        let min_rate = data.iter().map(|(_, rate)| *rate).fold(f64::MAX, f64::min);
+
+        let date_range = data.first().unwrap().0..data.last().unwrap().0;
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption(format!("Exchange Rate Trend: {} to {}", from, to), ("sans-serif", 20))
+            .margin(20)
+            .x_label_area_size(35)
+            .y_label_area_size(40)
+            .build_cartesian_2d(date_range, min_rate..max_rate)
+            .unwrap();
+
+        chart.configure_mesh()
+            .x_labels(7)
+            .x_label_formatter(&|date| date.format("%Y-%m-%d").to_string())
+            .y_desc("Exchange Rate")
+            .x_desc("Date")
+            .axis_desc_style(("sans-serif", 15))
+            .draw()
+            .unwrap();
+
+        chart.draw_series(LineSeries::new(
+            data.iter().map(|(date, rate)| (*date, *rate)),
+            &BLUE,
+        )).unwrap()
+        .label(format!("{} to {}", from, to))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        chart.configure_series_labels()
+            .background_style(&WHITE)
+            .border_style(&BLACK)
+            .draw()
+            .unwrap();
+    }
+
+    // Convert the raw buffer into a PNG image buffer
+    let img = RgbImage::from_raw(width, height, buffer)
+        .expect("Failed to create image from raw buffer");
+
+    let mut png_data = Vec::new();
+    {
+        let encoder = image::codecs::png::PngEncoder::new(&mut png_data);
+        encoder
+            .write_image(
+                &img,
+                width,
+                height,
+                image::ExtendedColorType::Rgb8,
+            )
+            .expect("Failed to encode PNG");
+    }
+
+    png_data
+}
+
+
 
 pub struct ExchangeRateMessage {
     pub message: String,
@@ -205,23 +295,34 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
 
             let llm_res = generate_sentence(prompt.as_str()).await;
 
-            let elapsed = start.elapsed();
+            let elapsed_llm = start.elapsed();
+
+            let start_graph = std::time::Instant::now();
+            let graph = get_trend_graph(&rates, from, to);
+            let elapsed_graph = start_graph.elapsed();
+            let elapsed_total = start.elapsed();
 
             ExchangeRateMessage{
                 message: format!(
                     "{}\n\
                     ```\n\
                     1 {} = {} {}\n\
+                    Message generated in {}.{:03} seconds\n\
+                    Graph generated in {}.{:03} seconds\n\
                     Generated in {}.{:03} seconds\n\
                     ```",
                     llm_res,
                     from,
                     rate,
                     to,
-                    elapsed.as_secs(),
-                    elapsed.subsec_millis(),
+                    elapsed_llm.as_secs(),
+                    elapsed_llm.subsec_millis(),
+                    elapsed_graph.as_secs(),
+                    elapsed_graph.subsec_millis(),
+                    elapsed_total.as_secs(),
+                    elapsed_total.subsec_millis(),
                 ),
-                graph: get_error_png("Not impelimented")
+                graph: graph
             }
            
         }
