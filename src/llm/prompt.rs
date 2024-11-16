@@ -14,7 +14,7 @@ pub fn render_template(
         .replace("{TO}", to)
         .replace("{CURR}", &format!("{:.3}", current_rate))
         .replace("{PREV}", &format!("{:.3}", last_rate))
-        .replace("{DIFF}", &format!("{:.3}", last_rate - current_rate))
+        .replace("{DIFF}", &format!("{:.3}", current_rate - last_rate))
         .replace("{CURR_DATE}", current_date)
         .replace("{LAST_DATE}", last_date)
 }
