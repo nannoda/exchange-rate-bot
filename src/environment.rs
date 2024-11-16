@@ -84,7 +84,7 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
 pub fn get_exchange_rate_api_url() -> String {
     return get_and_set_env_var(
         "EXCHANGE_RATE_API_URL",
-        "http://api.exchangeratesapi.io/v1/latest",
+        "https://api.exchangeratesapi.io/v1",
     );
 }
 
