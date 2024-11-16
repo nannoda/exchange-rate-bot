@@ -57,6 +57,8 @@ RUN cargo build --release --target x86_64-unknown-linux-musl --verbose
 
 # Runtime stage
 FROM alpine:latest
+RUN apk update && apk add --no-cache fontconfig freetype libgcc \
+    font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-noto-extra
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/exchange-rate-bot /app/exchange-rate-bot
 WORKDIR /app
 CMD ["./exchange-rate-bot"]
