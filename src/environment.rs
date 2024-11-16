@@ -228,4 +228,5 @@ pub async fn ensure_environment() {
     ensure_db();
     get_discord_token();
     get_exchange_rate_api_key();
+    get_ollama_url();
 }

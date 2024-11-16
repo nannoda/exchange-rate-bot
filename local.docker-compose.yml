@@ -1,5 +1,3 @@
-version: '3.1'
-
 # Services
 services:
   app:
@@ -7,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    network_mode: host
     restart: unless-stopped
     volumes:
       - ./data:/app/data
@@ -25,3 +24,6 @@ services:
       - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE}
       - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD}
       - RUST_LOG=exchange_rate_bot=info
+      - EXCHANGE_RATE_API_URL=http://localhost:8080
+      - EXCHANGE_RATE_API_KEY=YOUR_API_KEY
+      - OLLAMA_URL=${OLLAMA_URL} # OLLAMA_URL: Then Ollama endpoint.
