@@ -15,7 +15,8 @@ RUN apk update && apk add \
     clang18 \
     curl \
     strace \
-    fontconfig-dev
+    fontconfig-dev \
+    freetype-dev
 
 # Set environment variables for static linking
 ENV OPENSSL_STATIC=1

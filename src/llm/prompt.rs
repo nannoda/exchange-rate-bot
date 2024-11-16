@@ -42,45 +42,18 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     let threshold: f64 = environment::get_exchange_rate_change_threshold();
 
     log::debug!("Threshold: {}", threshold);
-    // Create the appropriate prompt based on the diff and threshold
-    let prompt = match diff.abs() {
-        diff if diff.abs() < threshold => render_template(
-            environment::get_equal_prompt_template().as_str(),
-            &from,
-            &to,
-            curr_val,
-            last_val,
-            &curr_date,
-            &last_date,
-        ),
-        diff if diff < 0.0 => render_template(
-            environment::get_increase_prompt_template().as_str(),
-            &from,
-            &to,
-            curr_val,
-            last_val,
-            &curr_date,
-            &last_date,
-        ),
-        diff if diff > 0.0 => render_template(
-            environment::get_decrease_prompt_template().as_str(),
-            &from,
-            &to,
-            curr_val,
-            last_val,
-            &curr_date,
-            &last_date,
-        ),
-        _ => render_template(
-            environment::get_equal_prompt_template().as_str(),
-            &from,
-            &to,
-            curr_val,
-            last_val,
-            &curr_date,
-            &last_date,
-        ),
+    let template = match diff.abs() {
+        diff if diff.abs() < threshold => environment::get_equal_prompt_template(),
+        diff if diff < 0.0 => environment::get_increase_prompt_template(),
+        diff if diff > 0.0 => environment::get_decrease_prompt_template(),
+        _ => environment::get_equal_prompt_template(),
     };
+
+    // Create the appropriate prompt based on the diff and threshold
+    let prompt = render_template(
+        &template, &from, &to, curr_val, last_val, &curr_date, &last_date,
+    );
+
     log::debug!("Prompt: {}", prompt);
     prompt
 }
