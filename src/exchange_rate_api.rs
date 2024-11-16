@@ -38,7 +38,7 @@ pub async fn fetch_exchange_rate<'a>(
     let full_url = format!("{}?{}", url, query_params.join("&"));
 
     // Perform the API request
-    let result = reqwest::get(full_url).await;
+    let result = reqwest::get(&full_url).await;
 
     if let Err(e) = &result {
         return Err(FetchExchangeRateError::NetworkError(
@@ -50,9 +50,9 @@ pub async fn fetch_exchange_rate<'a>(
 
     if !response.status().is_success() {
         return Err(FetchExchangeRateError::RequestError(format!(
-            "Request failed with status: {}",
-            response.status()
-        )));
+            "Request failed with status: {}, URL: {}",
+            response.status(), &full_url
+        ).replace(&api_key, "[API_KEY]")));
     }
 
     // Safely attempt to read the response body
