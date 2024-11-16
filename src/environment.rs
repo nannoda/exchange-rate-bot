@@ -1,7 +1,8 @@
 use rusqlite::Connection;
 
-use crate::utils::string_to_time_second;
 use std::env;
+
+use crate::utils::parse::string_to_time_second;
 
 pub const APP_VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,

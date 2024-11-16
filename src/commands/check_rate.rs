@@ -7,7 +7,7 @@ use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommand
 use serenity::model::application::{ResolvedOption, ResolvedValue};
 
 use crate::environment::{self};
-use crate::utils::get_exchange_rate_message;
+use crate::utils::message::get_exchange_rate_message;
 
 pub const COMMAND_NAME: &str = "exchange-check";
 
