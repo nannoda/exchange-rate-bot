@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS llm_result
 "#;
 
 const CREATE_HISTORICAL_DATA_TABLE_QUERY: &str = r#"
-CREATE TABLE IF NOT EXISTS json_data (
+CREATE TABLE IF NOT EXISTS historical_data (
     json TEXT NOT NULL,                  -- Text field to store JSON data
     date DATE NOT NULL,                  -- Date field to store the date of the JSON data
     insert_at DATETIME DEFAULT CURRENT_TIMESTAMP -- DateTime to store insertion timestamp

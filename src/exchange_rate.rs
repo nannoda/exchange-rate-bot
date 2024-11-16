@@ -200,7 +200,7 @@ pub async fn get_exchange_rate_from_date(
 ) -> Result<ExchangeRateMap, GetRatesError> {
     match get_historical_exchange_rate_db(date) {
         Some(map) => return Ok(map),
-        None => (),
+        None => log::debug!("Cannot find historical data on {}", date),
     };
     match fetch_exchange_rate(FetchMode::Date(date)).await {
         Ok(map) => return Ok(map),

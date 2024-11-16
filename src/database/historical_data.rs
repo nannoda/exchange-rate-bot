@@ -23,7 +23,7 @@ pub fn get_historical_exchange_rate_db(date: &NaiveDate) -> Option<ExchangeRateM
     // SQL query to find the latest JSON data for the given date
     let query = r#"
         SELECT json
-        FROM json_data
+        FROM historical_data
         WHERE date = ?
         ORDER BY insert_at DESC
         LIMIT 1
