@@ -5,7 +5,8 @@ ARG APP_VERSION=DOCKER_UNKNOWN
 ENV APP_VERSION=${APP_VERSION}
 
 # Add dependencies in a single RUN command to reduce layers
-RUN apk update && apk add \
+RUN apk update && apk add --no-cache \
+    alpine-sdk\
     build-base \
     pkgconf \
     openssl-dev openssl-libs-static \
@@ -16,20 +17,26 @@ RUN apk update && apk add \
     curl \
     strace \
     fontconfig-dev \
-    freetype-dev
+    freetype-dev \
+    libstdc++ \
+    zlib-dev
+
+    RUN pkg-config --modversion fontconfig freetype && \
+    ls -al /usr/lib | grep libfontconfig && \
+    ls -al /usr/lib | grep libfreetype
+
+# Add fonts
+RUN apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra
 
 # Set environment variables for static linking
 ENV OPENSSL_STATIC=1
 ENV OPENSSL_DIR=/usr
+ENV PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+ENV PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/share/pkgconfig
 
 # Set the working directory and copy Cargo.toml separately for caching dependencies
 WORKDIR /app
-
-# Copy only the Cargo files to cache dependencies
-COPY Cargo.toml Cargo.lock ./
-
-# Pre-fetch cargo dependencies
-RUN cargo fetch
 
 # Copy the source code only after dependencies are fetched
 COPY . .
