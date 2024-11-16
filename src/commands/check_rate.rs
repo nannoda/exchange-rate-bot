@@ -82,10 +82,17 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> EditInteractionResponse {
     debug!("from: {}, to: {}", from, to);
     // Generate the exchange rate message
     let msg = get_exchange_rate_message(from.as_str(), to.as_str()).await;
-    return EditInteractionResponse::new()
-        .content(msg.message)
-        // .embed(CreateEmbed::new().image("attachment://graph.svg"))
-        .new_attachment(CreateAttachment::bytes(msg.graph, "graph.png"));
+
+
+    // Make `response` mutable to allow modifications
+    let mut response = EditInteractionResponse::new().content(msg.message);
+
+    // Conditionally add the attachment
+    if let Some(graph) = msg.graph {
+        response = response.new_attachment(CreateAttachment::bytes(graph, "graph.png"));
+    }
+
+    response
 }
 
 pub fn autocomplete(input: &str) -> CreateAutocompleteResponse {

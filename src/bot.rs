@@ -14,8 +14,15 @@ use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     let msg = get_exchange_rate_message(from, to).await;
-    // send_text(&ctx, &message_content.message).await;
-    send_message(&ctx, &CreateMessage::new().content(msg.message).add_file(CreateAttachment::bytes(msg.graph, "graph.png"))).await;
+    
+    let mut message = CreateMessage::new().content(msg.message);
+
+    // Conditionally add the file if `msg.graph` exists
+    if let Some(graph) = msg.graph {
+        message = message.add_file(CreateAttachment::bytes(graph, "graph.png"));
+    }
+
+    send_message(&ctx, &message).await;
 }
 
 struct ExchangeRateBotEventHandler {

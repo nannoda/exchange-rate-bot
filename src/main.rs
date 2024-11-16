@@ -7,7 +7,7 @@ mod commands;
 mod database;
 mod exchange_rate;
 mod exchange_rate_api;
-
+mod plots;
 #[tokio::main]
 async fn main() {
     match dotenv() {
