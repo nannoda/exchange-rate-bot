@@ -25,7 +25,7 @@ pub fn get_historical_exchange_rate_db(date: &NaiveDate) -> Option<ExchangeRateM
         SELECT json
         FROM historical_data
         WHERE date = ?
-        ORDER BY insert_at DESC
+        ORDER BY insert_at ASC
         LIMIT 1
     "#;
 
