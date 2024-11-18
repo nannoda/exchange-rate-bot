@@ -23,8 +23,8 @@ services:
 
       - CHANNELS=${CHANNELS} # The channels to listen to. It should be a comma separated list of channel IDs. If not provided, the bot will not send any messages.
       - INTERVAL=${INTERVAL} # The interval to automatically send exchange rate updates. By default it is '24h'.
-      # - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate increases.
-      # - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate decreases.
+      - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate increases.
+      - DECREASE_PROMPT_TEMPLATE=${DECREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate decreases.
       - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate stays the same.
       - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD} # The threshold for the exchange rate change. If the change is greater than this value, the bot will send a message. By default it is 0.001.
       - RUST_LOG=exchange_rate_bot=DEBUG # The log level for the bot.
