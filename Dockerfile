@@ -4,10 +4,6 @@ FROM rust:alpine3.20 AS builder
 ARG APP_VERSION=DOCKER_UNKNOWN
 ENV APP_VERSION=${APP_VERSION}
 
-# Build the project with static linking
-RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo install cross
-
 # Add dependencies in a single RUN command to reduce layers
 RUN apk update && apk add --no-cache \
     alpine-sdk \
@@ -59,6 +55,10 @@ RUN mkdir -p /usr/share/fonts/red-hat-display && \
 
 # Copy the source code only after dependencies are fetched
 COPY . .
+
+# Build the project with static linking
+RUN rustup target add x86_64-unknown-linux-musl
+RUN cargo install cross
 
 RUN cargo build --release --target x86_64-unknown-linux-musl --verbose
 
