@@ -66,7 +66,7 @@ FROM alpine:latest
 
 # Install runtime dependencies
 RUN apk update && apk add --no-cache fontconfig freetype libgcc \
-    font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-noto-extra
+    font-terminus font-noto
 
 # Copy the Red Hat Display font from the builder
 COPY --from=builder /usr/share/fonts/red-hat-display /usr/share/fonts/red-hat-display
