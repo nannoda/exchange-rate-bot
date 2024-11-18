@@ -4,6 +4,7 @@ pub fn render_template(
     template: &str,
     from: &str,
     to: &str,
+    diff: f64,
     current_rate: f64,
     last_rate: f64,
     current_date: &str,
@@ -14,7 +15,7 @@ pub fn render_template(
         .replace("{TO}", to)
         .replace("{CURR}", &format!("{:.3}", current_rate))
         .replace("{PREV}", &format!("{:.3}", last_rate))
-        .replace("{DIFF}", &format!("{:.3}", current_rate - last_rate))
+        .replace("{DIFF}", &format!("{:.3}", diff))
         .replace("{CURR_DATE}", current_date)
         .replace("{LAST_DATE}", last_date)
 }
@@ -37,7 +38,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     log::debug!("Last rate value: {}", last_val);
 
     // Calculate the difference
-    let diff = curr_val - last_val;
+    let diff = last_val - curr_val;
 
     let threshold: f64 = environment::get_exchange_rate_change_threshold();
 
@@ -51,7 +52,7 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
 
     // Create the appropriate prompt based on the diff and threshold
     let prompt = render_template(
-        &template, &from, &to, curr_val, last_val, &curr_date, &last_date,
+        &template, &from, &to, diff, curr_val, last_val, &curr_date, &last_date,
     );
 
     log::debug!("Prompt: {}", prompt);

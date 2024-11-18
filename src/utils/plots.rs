@@ -109,7 +109,7 @@ pub fn get_trend_graph(
     to: &str,
 ) -> Result<Vec<u8>, PlotError> {
     let width = 800;
-    let height = 400;
+    let height = 600;
 
     // Extract the dates and exchange rates for the `from` and `to` currencies
     let mut data: Vec<(NaiveDate, f64)> = vec![];
