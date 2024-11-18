@@ -38,15 +38,15 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     log::debug!("Last rate value: {}", last_val);
 
     // Calculate the difference
-    let diff = last_val - curr_val;
+    let diff = curr_val - last_val;
 
     let threshold: f64 = environment::get_exchange_rate_change_threshold();
 
     log::debug!("Threshold: {}", threshold);
     let template = match diff.abs() {
         diff if diff.abs() < threshold => environment::get_equal_prompt_template(),
-        diff if diff < 0.0 => environment::get_increase_prompt_template(),
-        diff if diff > 0.0 => environment::get_decrease_prompt_template(),
+        diff if diff > 0.0 => environment::get_increase_prompt_template(),
+        diff if diff < 0.0 => environment::get_decrease_prompt_template(),
         _ => environment::get_equal_prompt_template(),
     };
 
