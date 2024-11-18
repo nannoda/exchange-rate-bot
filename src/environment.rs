@@ -65,9 +65,28 @@ pub fn get_interval() -> u64 {
 
 fn get_and_set_env_var(key: &str, default: &str) -> String {
     match env::var(key) {
-        Ok(val) => val,
-        Err(_) => {
-            log::info!("{} not found, using default", key);
+        Ok(val) => {
+            match val.len() {
+                0 => {
+                    log::info!(
+                        "Key {} has a length of 0, using default value: '{}'",
+                        key,
+                        default
+                    );
+                    // set environment variable
+                    env::set_var(key, default);
+                    default.to_string()
+                }
+                _ => val,
+            }
+        }
+        Err(err) => {
+            log::info!(
+                "Error: {} {} not found, using default value: '{}'",
+                err,
+                key,
+                default
+            );
             // set environment variable
             env::set_var(key, default);
             default.to_string()
