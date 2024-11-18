@@ -16,6 +16,7 @@ RUN apk update && apk add --no-cache \
     clang18 \
     curl \
     strace \
+    sqlite-dev sqlite-static \
     fontconfig-dev fontconfig-static \
     freetype-dev freetype-static \
     libpng-dev libpng-static \
@@ -46,11 +47,10 @@ RUN pkg-config --modversion fontconfig freetype2 && \
 # Set the working directory and copy Cargo.toml separately for caching dependencies
 WORKDIR /app
 
-# Install Red Hat Display font
-RUN curl -L -o /tmp/red-hat-display.zip https://fonts.google.com/download?family=Red+Hat+Display && \
-    mkdir -p /usr/share/fonts/red-hat-display && \
-    unzip /tmp/red-hat-display.zip -d /usr/share/fonts/red-hat-display && \
-    rm /tmp/red-hat-display.zip && \
+# Install Red Hat Display font from GitHub-hosted Google Fonts repo
+RUN mkdir -p /usr/share/fonts/red-hat-display && \
+    curl -L -o /usr/share/fonts/red-hat-display/RedHatDisplay-Regular.ttf https://github.com/google/fonts/raw/main/ofl/redhatdisplay/RedHatDisplay-Regular.ttf && \
+    curl -L -o /usr/share/fonts/red-hat-display/RedHatDisplay-Bold.ttf https://github.com/google/fonts/raw/main/ofl/redhatdisplay/RedHatDisplay-Bold.ttf && \
     fc-cache -f -v
 
 # Copy the source code only after dependencies are fetched
@@ -66,7 +66,7 @@ FROM alpine:latest
 
 # Install runtime dependencies
 RUN apk update && apk add --no-cache fontconfig freetype libgcc \
-    font-terminus font-noto
+    font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-noto-extra
 
 # Copy the Red Hat Display font from the builder
 COPY --from=builder /usr/share/fonts/red-hat-display /usr/share/fonts/red-hat-display
