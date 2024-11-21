@@ -43,11 +43,14 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     let threshold: f64 = environment::get_exchange_rate_change_threshold();
 
     log::debug!("Threshold: {}", threshold);
-    let template = match diff.abs() {
-        diff if diff.abs() < threshold => environment::get_equal_prompt_template(),
-        diff if diff > 0.0 => environment::get_increase_prompt_template(),
-        diff if diff < 0.0 => environment::get_decrease_prompt_template(),
-        _ => environment::get_equal_prompt_template(),
+    let template = if diff.abs() < threshold {
+        environment::get_equal_prompt_template()
+    } else if diff > 0.0 {
+        environment::get_increase_prompt_template()
+    } else if diff < 0.0 {
+        environment::get_decrease_prompt_template()
+    } else {
+        environment::get_equal_prompt_template()
     };
 
     // Create the appropriate prompt based on the diff and threshold
