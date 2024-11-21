@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set current date as env variable
-        run: echo "APP_VERSION=$(date +'v%Y-%m-%d-%H%M%S)" >> $GITHUB_ENV
+        run: echo "APP_VERSION=$(date +'v%Y-%m-%d-%H%M%S')" >> $GITHUB_ENV
       - name: Echo current date
         run: echo $APP_VERSION # Gives "2022-12-11T01:42:20"
       - name: Checkout
