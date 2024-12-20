@@ -172,20 +172,21 @@ pub async fn get_exchange_rate_from_date(
 }
 
 pub async fn get_exchange_rates() -> Result<Vec<ExchangeRateMap>, GetRatesError> {
-    // Get today's date
-    let today = Local::now().date_naive();
-
     let mut rates = Vec::new();
 
     // Get the current exchange rate
-    match fetch_exchange_rate(FetchMode::Latest).await {
-        Ok(map) => rates.push(map),
+    let latest_date = match fetch_exchange_rate(FetchMode::Latest).await {
+        Ok(map) => {
+            let date = map.date.clone();
+            rates.push(map);
+            date
+        },
         Err(err) => return Err(GetRatesError::RemoteError(err)),
-    }
+    };
 
     // Get for the past 7 days
     for i in 1..DAYS_TO_CHECK {
-        let date = today - Duration::days(i);
+        let date = latest_date - Duration::days(i);
         match get_exchange_rate_from_date(&date).await {
             Ok(map) => rates.push(map),
             Err(err) => return Err(err),
