@@ -1,19 +1,13 @@
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, ParseError, TimeZone, Utc};
-use log::debug;
-use rusqlite::Connection;
 use serde_json::Value;
-use serenity::futures::future::ok;
 use thiserror::Error;
 
 use crate::{
-    database::{
-        exchange_rate_api_raw::save_raw_exchange_rate_result,
-        historical_data::get_historical_exchange_rate_db,
-    },
-    environment::{self, DAYS_TO_CHECK},
+    database::historical_data::get_historical_exchange_rate_db,
+    environment::DAYS_TO_CHECK,
     exchange_rate_api::{fetch_exchange_rate, FetchExchangeRateError, FetchMode},
 };
-use std::{collections::HashMap, error::Error, fmt};
+use std::{collections::HashMap, fmt};
 
 #[derive(Debug, Clone)]
 pub struct ExchangeRateMap {

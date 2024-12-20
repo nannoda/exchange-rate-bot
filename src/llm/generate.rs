@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::environment::{self, get_system_prompt};
 use reqwest;
 use serde_json::Value;
@@ -28,7 +30,16 @@ pub async fn generate_sentence(user_prompt: &str) -> String {
     let json_string = json.to_string();
     log::debug!("json_string: {}", json_string);
 
-    let client = reqwest::Client::new();
+    let client = match reqwest::ClientBuilder::new()
+        .timeout(Duration::new(60 * 5, 0))
+        .build()
+    {
+        Ok(client) => client,
+        Err(e) => {
+            log::error!("Failed to create a client: {}", e);
+            return format!("Error generating response: Failed to create a client ({})", e);
+        }
+    };
     let res = match client
         .post(url)
         .header("accept", "application/json")

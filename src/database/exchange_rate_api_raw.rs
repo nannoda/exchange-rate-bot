@@ -1,6 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use rusqlite::{Connection, Error as RusqliteError};
+use rusqlite::Connection;
 
 use crate::environment;
 
