@@ -8,10 +8,7 @@ version: '3.1'
 
 services:
   app:
-    image: 'exchangebot:latest'
-    build:
-      context: https://github.com/nannoda/exchange-rate-bot.git
-      dockerfile: Dockerfile
+    image: nannoda/exchange-rate-bot:latest
     restart: unless-stopped
     volumes:
     # By default the executable will be stored in /app
@@ -19,14 +16,10 @@ services:
     environment:
     # Required environment variables
       - DISCORD_TOKEN=${DISCORD_TOKEN} # DISCORD_TOKEN: The bot token for the discord bot. You can get it from the discord developer portal.
-      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY} # EXCHANGE_RATE_API_KEY: The API key for the exchange rate API. You can get it from https://exchangeratesapi.io/
       - EXCHANGE_FROM=${EXCHANGE_FROM}  # EXCHANGE_FROM: The currency code to convert from. For example, USD. It should be an ISO 4217 currency code.
       - EXCHANGE_TO=${EXCHANGE_TO} # EXCHANGE_TO: The currency code to convert to. For example, EUR. It should be an ISO 4217 currency code.
-      - COHERE_API_KEY=${COHERE_API_KEY} # COHERE_API_KEY: The API key for the Cohere API. You can get it from https://cohere.com/
-
     # Optional environment variables
       - DB_FILE=/app/data/bot.db # The path to the SQLite database file. By default it will be stored in /app/exchange_rate_bot.db
-
       - CHANNELS=${CHANNELS} # The channels to listen to. It should be a comma separated list of channel IDs. If not provided, the bot will not send any messages.
       - INTERVAL=${INTERVAL} # The interval to automatically send exchange rate updates. By default it is '24h'.
       - INCREASE_PROMPT_TEMPLATE=${INCREASE_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate increases.
@@ -34,4 +27,5 @@ services:
       - EQUAL_PROMPT_TEMPLATE=${EQUAL_PROMPT_TEMPLATE} # The template for the message to send when the exchange rate stays the same.
       - EXCHANGE_RATE_CHANGE_THRESHOLD=${EXCHANGE_RATE_CHANGE_THRESHOLD} # The threshold for the exchange rate change. If the change is greater than this value, the bot will send a message. By default it is 0.001.
       - RUST_LOG=exchange_rate_bot=info # The log level for the bot.
+      - EXCHANGE_RATE_API_URL=${EXCHANGE_RATE_API_URL} # The exchange rate API. Default to https://api.frankfurter.dev/v1. You can learn how to self host an API here: https://github.com/lineofflight/frankfurter
 ```
