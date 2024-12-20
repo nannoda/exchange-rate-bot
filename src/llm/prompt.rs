@@ -32,8 +32,8 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
     let curr_val: f64 = curr_rate.get_val(from, to).unwrap_or(-1.0);
     let last_val: f64 = last_rate.get_val(from, to).unwrap_or(-1.0);
 
-    let curr_date = curr_rate.timestamp.format("%Y-%m-%d").to_string();
-    let last_date = last_rate.timestamp.format("%Y-%m-%d").to_string();
+    let curr_date = curr_rate.date.format("%Y-%m-%d").to_string();
+    let last_date = last_rate.date.format("%Y-%m-%d").to_string();
     log::debug!("Current rate value: {}", curr_val);
     log::debug!("Last rate value: {}", last_val);
 

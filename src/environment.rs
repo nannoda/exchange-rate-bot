@@ -103,7 +103,7 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
 pub fn get_exchange_rate_api_url() -> String {
     return get_and_set_env_var(
         "EXCHANGE_RATE_API_URL",
-        "https://api.exchangeratesapi.io/v1",
+        "https://api.frankfurter.dev/v1",
     );
 }
 
@@ -182,16 +182,6 @@ pub fn get_discord_token() -> String {
     }
 }
 
-pub fn get_exchange_rate_api_key() -> String {
-    match env::var("EXCHANGE_RATE_API_KEY") {
-        Ok(val) => val,
-        Err(_) => {
-            // stop the program
-            panic!("EXCHANGE_RATE_API_KEY not found in environment! Please set it in .env file or in the environment");
-        }
-    }
-}
-
 pub fn get_exchange_from() -> String {
     match env::var("EXCHANGE_FROM") {
         Ok(val) => val,
@@ -246,6 +236,6 @@ pub async fn ensure_environment() {
     log::info!("Ensuring environment");
     ensure_db();
     get_discord_token();
-    get_exchange_rate_api_key();
+    // get_exchange_rate_api_key();
     get_ollama_url();
 }

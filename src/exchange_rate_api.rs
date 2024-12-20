@@ -24,7 +24,6 @@ pub enum FetchMode<'a> {
 pub async fn fetch_exchange_rate<'a>(
     mode: FetchMode<'a>,
 ) -> Result<ExchangeRateMap, FetchExchangeRateError> {
-    let api_key = environment::get_exchange_rate_api_key();
     let api_url = environment::get_exchange_rate_api_url();
 
     // Construct the URL with optional parameters
@@ -33,7 +32,7 @@ pub async fn fetch_exchange_rate<'a>(
         FetchMode::Date(date) => format!("{}/{}", api_url, date.format("%Y-%m-%d")),
     };
 
-    let query_params = vec![format!("access_key={}", api_key)];
+    let query_params: Vec<String> = Vec::new();
 
     let full_url = format!("{}?{}", url, query_params.join("&"));
 
@@ -42,7 +41,7 @@ pub async fn fetch_exchange_rate<'a>(
 
     if let Err(e) = &result {
         return Err(FetchExchangeRateError::NetworkError(
-            e.to_string().replace(&api_key, "[API_KEY]"),
+            e.to_string(),
         ));
     }
 
@@ -52,7 +51,7 @@ pub async fn fetch_exchange_rate<'a>(
         return Err(FetchExchangeRateError::RequestError(format!(
             "Request failed with status: {}, URL: {}",
             response.status(), &full_url
-        ).replace(&api_key, "[API_KEY]")));
+        )));
     }
 
     // Safely attempt to read the response body

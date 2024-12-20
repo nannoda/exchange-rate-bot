@@ -17,8 +17,6 @@ use std::{collections::HashMap, error::Error, fmt};
 
 #[derive(Debug, Clone)]
 pub struct ExchangeRateMap {
-    pub success: bool,
-    pub timestamp: DateTime<Utc>,
     pub date: NaiveDate,
     pub base: String,
     pub map: HashMap<String, f64>,
@@ -52,8 +50,8 @@ impl fmt::Display for ExchangeRateMap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "ExchangeRate {{ success: {}, timestamp: {}, base: {}, rates: {{",
-            self.success, self.timestamp, self.base
+            "ExchangeRate {{ date: {}, base: {}, rates: {{",
+            self.date, self.base
         )?;
 
         // Iterate through the rates and format them
@@ -69,8 +67,6 @@ impl fmt::Display for ExchangeRateMap {
 impl Default for ExchangeRateMap {
     fn default() -> Self {
         return ExchangeRateMap {
-            success: false,
-            timestamp: Utc::now(),
             date: Utc::now().date_naive(),
             base: "EUR".to_string(),
             map: HashMap::new(),
@@ -114,30 +110,6 @@ impl ExchangeRateMap {
             }
         }
 
-        // Ensure 'success' is true for valid responses
-        let success = parsed
-            .get("success")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        if !success {
-            return Err(ExchangeRateError::InvalidResponse(
-                "API request was not successful".to_string(),
-            ));
-        }
-
-        // Parse the other expected fields
-        let timestamp = parsed
-            .get("timestamp")
-            .and_then(|t| t.as_i64())
-            .and_then(|t| {
-                Some(
-                    Utc.timestamp_opt(t, 0)
-                        .single()
-                        .ok_or_else(|| ExchangeRateError::ParseDateTimeError),
-                )
-            })
-            .ok_or_else(|| ExchangeRateError::MissingField("timestamp".to_string()))??;
-
         let date = parsed
             .get("date")
             .and_then(|t| t.as_str())
@@ -172,10 +144,7 @@ impl ExchangeRateMap {
                 )));
             }
         }
-
         Ok(ExchangeRateMap {
-            success,
-            timestamp,
             base,
             date,
             map: rate_map,
