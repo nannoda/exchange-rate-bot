@@ -6,7 +6,6 @@ mod llm;
 mod commands;
 mod database;
 mod exchange_rate;
-mod exchange_rate_api;
 
 #[tokio::main]
 async fn main() {

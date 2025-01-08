@@ -1,4 +1,6 @@
-use crate::{database::exchange_rate::save_exchange_rate, environment, exchange_rate::get_exchange_rates, llm::{generate::generate_sentence, prompt::get_prompt}};
+use chrono::{Duration, Utc};
+
+use crate::{database::exchange_rate::save_exchange_rate, environment, exchange_rate::ExchangeRateMap, llm::{generate::generate_sentence, prompt::get_prompt}};
 
 use super::plots::get_trend_graph;
 
@@ -9,9 +11,10 @@ pub struct ExchangeRateMessage {
 }
 
 pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMessage {
-    // let rate_result = get_exchange_rate(from, to).await;
+    // Calculate the date 7 days ago
+    let from_date = Utc::now() - Duration::days(30);
 
-    let rates = get_exchange_rates().await;
+    let rates = ExchangeRateMap::get_rates(from_date, Some(from.into())).await;
 
     match rates {
         Ok(rates) => {
@@ -77,19 +80,12 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
            
         }
         Err(e) => {
-            match e {
-                crate::exchange_rate::GetRatesError::RemoteError(fetch_exchange_rate_error) => ExchangeRateMessage{
-                    message:format!("Error fetching API. Please verify the API URL or API key. URL used: `{}`\n`Error: {:?}`", 
-                    environment::get_exchange_rate_api_url(), 
-                    fetch_exchange_rate_error),
-                    graph: None
-                },
-                // crate::exchange_rate::GetRatesError::LocalError(local_exchange_rate_error) => ExchangeRateMessage{
-                //     message: format!("Error reading local database.\n`Error: {:?}`", local_exchange_rate_error),
-                //     graph: get_error_png("Local Error")
-                // }
+            ExchangeRateMessage{
+                message:format!("Error fetching API. Please verify the API URL and Internet connection. URL used: `{}`\n`Error: {:?}`", 
+                environment::get_exchange_rate_api_url(), 
+                e),
+                graph: None
             }
         }
     }
-
 }
