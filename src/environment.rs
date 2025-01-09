@@ -21,8 +21,6 @@ pub const APP_VERSION: &str = match option_env!("APP_VERSION") {
     },
 };
 
-pub const DAYS_TO_CHECK: i64 = 7;
-
 const CREATE_EXCHANGE_RATE_RESULT_TABLE_QUERY: &str = r#"
 CREATE TABLE IF NOT EXISTS exchange_rate
 (
