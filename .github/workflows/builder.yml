@@ -7,7 +7,7 @@ on:
       - Dockerfile.builder
       - Cargo.toml
       - Cargo.lock
-      - /.github/workflow/builder.yml
+      - /.github/workflows/builder.yml
   pull_request:
     branches: ["main"]
     paths:
