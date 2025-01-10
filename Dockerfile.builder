@@ -1,5 +1,5 @@
-# Build stage
-FROM rust:alpine3.21 AS builder
+# Build environment stage
+FROM rust:alpine3.21 AS environment-setup
 
 ARG APP_VERSION=DOCKER_UNKNOWN
 ENV APP_VERSION=${APP_VERSION}
@@ -9,7 +9,6 @@ RUN apk update && apk add --no-cache \
   alpine-sdk \
   build-base \
   pkgconf \
-  # libressl-dev \
   musl-dev \
   cmake make \
   perl \
@@ -29,8 +28,6 @@ RUN apk update && apk add --no-cache \
   unzip
 
 # Set environment variables for static linking
-# ENV OPENSSL_STATIC=1
-# ENV OPENSSL_DIR=/usr
 ENV PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
 ENV PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
 ENV RUSTFLAGS="-C target-feature=-crt-static -L /usr/lib -lxml2 -lpng -lbz2 -lz -lbrotlidec -lbrotlienc -lfreetype -lfontconfig"
@@ -50,30 +47,6 @@ WORKDIR /app
 # Copy the source code only after dependencies are fetched
 COPY . .
 
-# Build the project with static linking
+# Install cross-compilation support
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo install cross
-
-RUN cargo build --release --target x86_64-unknown-linux-musl --verbose
-
-# Runtime stage
-FROM alpine:3.21
-
-# Install runtime dependencies
-RUN apk update && apk add --no-cache fontconfig freetype libgcc \
-  font-terminus font-inconsolata font-noto
-
-# Copy the Red Hat Display font from the builder
-# COPY --from=builder /usr/share/fonts/red-hat-display /usr/share/fonts/red-hat-display
-
-# Update font cache
-RUN fc-cache -f -v
-
-# Copy the built application from the builder stage
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/exchange-rate-bot /app/exchange-rate-bot
-
-# Set the working directory
-WORKDIR /app
-
-# Command to run the application
-CMD ["./exchange-rate-bot"]
