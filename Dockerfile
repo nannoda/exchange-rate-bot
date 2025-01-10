@@ -50,11 +50,7 @@ WORKDIR /app
 # Copy the source code only after dependencies are fetched
 COPY . .
 
-# Build the project with static linking
-RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo install cross
-
-RUN cargo build --release --target x86_64-unknown-linux-musl --verbose
+RUN cargo build --release --verbose
 
 # Runtime stage
 FROM alpine:3.21
@@ -70,7 +66,7 @@ RUN apk update && apk add --no-cache fontconfig freetype libgcc \
 RUN fc-cache -f -v
 
 # Copy the built application from the builder stage
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/exchange-rate-bot /app/exchange-rate-bot
+COPY --from=builder /app/target/release/exchange-rate-bot /app/exchange-rate-bot
 
 # Set the working directory
 WORKDIR /app
