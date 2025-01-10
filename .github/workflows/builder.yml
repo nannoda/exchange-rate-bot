@@ -22,11 +22,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create Builder Version
-        run: calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "BUILDER_VERSION=builder-$calculatedSha" >> $GITHUB_ENV
+        run: echo "BUILDER_VERSION=builder-${{ github.sha }}" >> $GITHUB_ENV
       - name: Echo Builder Version
         run: echo $BUILDER_VERSION
-        
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
