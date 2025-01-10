@@ -1,27 +1,27 @@
+name: Docker Builder Image CI
+
 on:
   push:
     branches: ["main"]
+    paths:
+      - Dockerfile.builder
+      - Cargo.toml
+      - Cargo.lock
   pull_request:
     branches: ["main"]
-  workflow_run:
-    workflows: ["Docker Builder Image CI"]
-    branches: ["main"]
-    types:
-      - completed
+    paths:
+      - Dockerfile.builder
+      - Cargo.toml
+      - Cargo.lock
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set app version
-        run: echo "APP_VERSION=$(date +'v%Y-%m-%d-%H%M%S')" >> $GITHUB_ENV
-      - name: Echo app version
-        run: echo $APP_VERSION
-
       - name: Create Builder Version
         run: echo "BUILDER_VERSION=builder-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Echo Builder Version
-        run: echo nannoda/exchange-rate-bot:$BUILDER_VERSION
+        run: echo $BUILDER_VERSION
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -40,10 +40,9 @@ jobs:
       - name: Build and push the Docker image
         run: |
           docker buildx build . \
-            --file Dockerfile \
-            --tag nannoda/exchange-rate-bot:$APP_VERSION \
-            --tag nannoda/exchange-rate-bot:latest \
+            --file Dockerfile.builder \
+            --tag nannoda/exchange-rate-bot:$BUILDER_VERSION \
+            --tag nannoda/exchange-rate-bot:builder-latest \
             --platform linux/amd64,linux/arm64 \
-            --build-arg APP_VERSION="$APP_VERSION" \
-            --build-arg BASE_IMAGE=$BUILDER_VERSION
             --push
+
