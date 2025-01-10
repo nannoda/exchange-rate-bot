@@ -1,6 +1,4 @@
 use std::env;
-use std::fs;
-use std::path::Path;
 
 fn main() {
     // Determine the build profile (debug or release)
