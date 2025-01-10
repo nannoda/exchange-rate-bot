@@ -7,14 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Set current date as env variable
         run: echo "APP_VERSION=$(date +'v%Y-%m-%d-%H%M%S')" >> $GITHUB_ENV
       - name: Echo current date
-        run: echo $APP_VERSION # Gives "2022-12-11T01:42:20"
+        run: echo $APP_VERSION
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -30,19 +29,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and load the Docker image
+      - name: Build and push the Docker image
         run: |
           docker buildx build . \
             --file Dockerfile \
             --tag nannoda/exchange-rate-bot:$APP_VERSION \
             --tag nannoda/exchange-rate-bot:latest \
-            --build-arg APP_VERSION="$APP_VERSION(docker)" \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg APP_VERSION="$APP_VERSION" \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache \
-            --load
-
-      - name: Push the Docker image (versioned)
-        run: docker image push nannoda/exchange-rate-bot:$APP_VERSION
-
-      - name: Push the Docker image (latest)
-        run: docker image push nannoda/exchange-rate-bot:latest
+            --push
