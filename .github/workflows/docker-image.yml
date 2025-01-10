@@ -42,7 +42,7 @@ jobs:
             --file Dockerfile \
             --tag nannoda/exchange-rate-bot:$APP_VERSION \
             --tag nannoda/exchange-rate-bot:latest \
-            --platform linux/amd64 \
+            --platform linux/amd64,linux/arm64 \
             --build-arg APP_VERSION="$APP_VERSION" \
             --build-arg BASE_IMAGE=$BUILDER_VERSION
             --push
