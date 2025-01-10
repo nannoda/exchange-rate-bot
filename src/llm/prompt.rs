@@ -13,9 +13,9 @@ pub fn render_template(
     template
         .replace("{FROM}", from)
         .replace("{TO}", to)
-        .replace("{CURR}", &format!("{:.3}", current_rate))
-        .replace("{PREV}", &format!("{:.3}", last_rate))
-        .replace("{DIFF}", &format!("{:.3}", diff))
+        .replace("{CURR}", &format!("{:.4}", current_rate))
+        .replace("{PREV}", &format!("{:.4}", last_rate))
+        .replace("{DIFF}", &format!("{:.4}", diff))
         .replace("{CURR_DATE}", current_date)
         .replace("{LAST_DATE}", last_date)
 }
