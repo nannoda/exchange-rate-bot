@@ -4,11 +4,9 @@ An AI-powered exchange rate bot that gives you updates on the exchange rate betw
 Example configuration:
 
 ```yml
-version: '3.1'
-
 services:
   app:
-    image: nannoda/exchange-rate-bot:latest
+    image: nannoda/exchange-rate-bot:latest # latest tag is not stable.
     restart: unless-stopped
     volumes:
     # By default the executable will be stored in /app
