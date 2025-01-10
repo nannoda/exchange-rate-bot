@@ -46,6 +46,6 @@ jobs:
             --file Dockerfile.builder \
             --tag nannoda/exchange-rate-bot:$BUILDER_VERSION \
             --tag nannoda/exchange-rate-bot:builder-latest \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64 \
             --push
 
