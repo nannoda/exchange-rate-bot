@@ -18,14 +18,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Create Builder Version
         run: calculatedSha=$(git rev-parse --short ${{ github.sha }})
           echo "BUILDER_VERSION=builder-$calculatedSha" >> $GITHUB_ENV
       - name: Echo Builder Version
         run: echo $BUILDER_VERSION
-      - name: Checkout
-        uses: actions/checkout@v4
-
+        
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
