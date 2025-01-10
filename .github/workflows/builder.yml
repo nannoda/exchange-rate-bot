@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create Builder Version
-        run: echo "BUILDER_VERSION=builder-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "BUILDER_VERSION=builder-$(GITHUB_SHA)" >> $GITHUB_ENV
       - name: Echo Builder Version
         run: echo $BUILDER_VERSION
       - name: Checkout
