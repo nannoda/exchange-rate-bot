@@ -21,7 +21,7 @@ jobs:
         run: echo $APP_VERSION
 
       - name: Create Builder Version
-        run: echo "BUILDER_VERSION=builder-${{ github.sha }}" >> $GITHUB_ENV
+        run: echo "BUILDER_VERSION=builder-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Echo Builder Version
         run: echo nannoda/exchange-rate-bot:$BUILDER_VERSION
