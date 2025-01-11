@@ -17,13 +17,6 @@ jobs:
       - name: Echo app version
         run: echo $APP_VERSION
 
-      - name: Create Builder Version
-        run: echo "BUILDER_VERSION=builder-latest" >> $GITHUB_ENV
-
-      - name: Echo Builder Version
-        run: echo nannoda/exchange-rate-bot:$BUILDER_VERSION
-      
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -42,7 +35,7 @@ jobs:
             --file Dockerfile \
             --tag nannoda/exchange-rate-bot:$APP_VERSION \
             --tag nannoda/exchange-rate-bot:latest \
-            --platform linux/amd64,linux/arm64 \
             --build-arg APP_VERSION="$APP_VERSION" \
-            --build-arg BASE_IMAGE=nannoda/exchange-rate-bot:$BUILDER_VERSION
+            --build-arg BASE_IMAGE=nannoda/exchange-rate-bot:builder-latest \
+            --platform linux/amd64,linux/arm64 \
             --push
