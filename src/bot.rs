@@ -1,7 +1,10 @@
+use chrono::Utc;
+use cron::Schedule;
 use serenity::all::{
     CommandDataOptionValue, CreateAttachment, CreateMessage, EditInteractionResponse,
 };
 use serenity::prelude::*;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -150,21 +153,31 @@ impl EventHandler for ExchangeRateBotEventHandler {
         // Untested claim, just theoretically. :P
         let ctx = Arc::new(ctx);
         if !self.is_loop_running.load(Ordering::Relaxed) {
+            // Cron schedule: every minute (example: "0 * * * * *")
+            let cron_expression = environment::get_cron_expression(); // Example: "0/30 * * * * *" for every 30 seconds
+            let schedule = Schedule::from_str(&cron_expression).expect("Invalid cron expression");
+
             // We have to clone the Arc, as it gets moved into the new thread.
             let ctx1 = Arc::clone(&ctx);
             // tokio::spawn creates a new green thread that can run in parallel with the rest of
             // the application.
             tokio::spawn(async move {
+                let mut interval = schedule.upcoming(Utc);
+
                 loop {
-                    // We clone Context again here, because Arc is owned, so it moves to the
-                    // new function.
-                    send_exchange_rate_message(Arc::clone(&ctx1), &exchange_from, &exchange_to)
-                        .await;
+                    if let Some(next) = interval.next() {
+                        let now = Utc::now();
+                        let delay = (next - now)
+                            .to_std()
+                            .unwrap_or_else(|_| Duration::from_secs(0));
 
-                    let interval = environment::get_interval();
-                    log::debug!("Interval: {}", interval);
+                        log::info!("Next execution in: {:?}", delay);
 
-                    tokio::time::sleep(Duration::from_secs(interval)).await;
+                        tokio::time::sleep(delay).await;
+
+                        send_exchange_rate_message(Arc::clone(&ctx1), &exchange_from, &exchange_to)
+                            .await;
+                    }
                 }
             });
             // Now that the loop is running, we set the bool to true

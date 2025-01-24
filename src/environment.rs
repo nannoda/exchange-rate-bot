@@ -73,10 +73,14 @@ CREATE TABLE IF NOT EXISTS search_result
 );
 "#;
 
-pub fn get_interval() -> u64 {
-    let interval_str = get_and_set_env_var("INTERVAL", "24h");
-    let interval_int = string_to_time_second(interval_str.as_str());
-    return interval_int;
+// pub fn get_interval() -> u64 {
+//     let interval_str = get_and_set_env_var("INTERVAL", "24h");
+//     let interval_int = string_to_time_second(interval_str.as_str());
+//     return interval_int;
+// }
+
+pub fn get_cron_expression() -> String {
+    get_and_set_env_var("EXCHANGE_RATE_SCHEDULE", "0 0 0 * * *")
 }
 
 fn get_and_set_env_var(key: &str, default: &str) -> String {

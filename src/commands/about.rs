@@ -21,16 +21,26 @@ pub fn run() -> EditInteractionResponse {
     ```\n\
     - Exchange From: `{}`\n\
     - Exchange To: `{}`\n\
-    - Interval: `{}` seconds\n\
+    - Schedule: `{}`\n\
     - Exchange Rate API: `{}`\n\
+    - Fallback Exchange Rate API: `{}`\n\
+    - SearXNG API: `{}`\n\
     - Ollama Model: `{}`\n\
     ```
     ",
         environment::APP_VERSION,
         environment::get_exchange_from(),
         environment::get_exchange_to(),
-        environment::get_interval(),
+        environment::get_cron_expression(),
         environment::get_exchange_rate_api_url(),
+        match environment::get_fallback_exchange_rate_api_key() {
+            Some(_) => "ENABLED",
+            None => "DISABLED",
+        },
+        match environment::get_searxng_url() {
+            Some(url) => url,
+            None => "N/A".to_string(),
+        },
         environment::get_ollama_model(),
     );
 

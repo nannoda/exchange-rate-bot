@@ -461,6 +461,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cron"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5877d3fbf742507b66bc2a1945106bd30dd8504019d596901ddd012a4dd01740"
+dependencies = [
+ "chrono",
+ "once_cell",
+ "winnow",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -677,6 +688,7 @@ name = "exchange-rate-bot"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "cron",
  "dotenv",
  "env_logger",
  "image 0.25.5",
