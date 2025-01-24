@@ -39,6 +39,15 @@ CREATE TABLE IF NOT EXISTS exchange_rate_api_raw
 );
 "#;
 
+const CREATE_EXCHANGE_RATE_FALLBACK_TABLE_QUERY: &str = r#"
+CREATE TABLE IF NOT EXISTS exchange_rate_api_fallback
+(
+    json TEXT NOT NULL,
+    time TIMESTAMP NOT NULL,
+    insert_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"#;
+
 const CREATE_LLM_RESULT_TABLE_QUERY: &str = r#"
 CREATE TABLE IF NOT EXISTS llm_result
 (
@@ -116,6 +125,19 @@ pub fn get_searxng_url() -> Option<String> {
 
 pub fn get_exchange_rate_api_url() -> String {
     return get_and_set_env_var("EXCHANGE_RATE_API_URL", "https://api.frankfurter.dev/v1");
+}
+
+pub fn get_fallback_exchange_rate_api_url() -> String {
+    return get_and_set_env_var(
+        "FALLBACK_EXCHANGE_RATE_API_URL",
+        "https://api.exchangeratesapi.io/v1",
+    );
+}
+pub fn get_fallback_exchange_rate_api_key() -> Option<String> {
+    match env::var("FALLBACK_EXCHANGE_RATE_API_KEY") {
+        Ok(url) => Some(url),
+        Err(_) => None,
+    }
 }
 
 pub fn get_increase_prompt_template() -> String {

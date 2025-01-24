@@ -1,13 +1,24 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, ParseError, TimeZone, Utc};
+use chrono::{
+    DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, ParseError, TimeZone, Utc,
+};
 use serde_json::Value;
+use serenity::{json, model::timestamp};
 use thiserror::Error;
 
 use crate::{
     // database::historical_data::get_historical_exchange_rate_db,
-    database::exchange_rate_api_raw::save_raw_exchange_rate_result,
+    database::exchange_rate::{
+        get_local_exchange_rate_fallback, save_exchange_rate_fallback,
+        save_raw_exchange_rate_result,
+    },
     environment::{self},
+    main,
 };
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt::{self, format},
+    iter::Map,
+};
 
 #[derive(Debug, Clone)]
 pub struct ExchangeRateMap {
@@ -75,7 +86,18 @@ pub enum FetchExchangeRateError {
     ResponseBodyError(String),
 
     #[error("Failed to parse JSON: {0}")]
-    ParseError(#[from] serde_json::Error),
+    ParseError(#[from] ExchangeRateParserError),
+
+    // #[error("JSON in unexpected form: {0}")]
+    // ShapeError(String),
+    #[error("Missing API Key")]
+    MissingKeyError,
+}
+
+#[derive(Debug, Error)]
+pub enum ExchangeRateParserError {
+    #[error("Failed to parse JSON: {0}")]
+    SerdeError(#[from] serde_json::Error),
 
     #[error("JSON in unexpected form: {0}")]
     ShapeError(String),
@@ -102,6 +124,123 @@ impl ExchangeRateMap {
 
         // Return the conversion rate
         Some(to_value / from_value)
+    }
+
+    pub fn parse_fallback_json(json: &str) -> Result<ExchangeRateMap, ExchangeRateParserError> {
+        let v: Value = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(e) => return Err(ExchangeRateParserError::SerdeError(e)),
+        };
+
+        let datetime = match v
+            .get("timestamp")
+            .and_then(|v| v.as_i64())
+            .and_then(|n| DateTime::from_timestamp(n, 0))
+        {
+            Some(t) => t,
+            None => {
+                return Err(ExchangeRateParserError::ShapeError(format!(
+                    "JSON in wrong shape (datetime): {json}"
+                )))
+            }
+        };
+
+        let base = match v
+            .get("base")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Some(s.to_string()))
+        {
+            Some(t) => t,
+            None => {
+                return Err(ExchangeRateParserError::ShapeError(format!(
+                    "JSON in wrong shape (base): {json}"
+                )))
+            }
+        };
+
+        let map: HashMap<String, f64> = match v.get("rates").and_then(|v| v.as_object()) {
+            Some(o) => o
+                .iter()
+                .map(|(k, v)| {
+                    let value = match v.as_f64() {
+                        Some(v) => v,
+                        None => {
+                            return Err(ExchangeRateParserError::ShapeError(format!(
+                                "JSON in wrong shape (map item): [{k}] {v}"
+                            )))
+                        }
+                    };
+
+                    Ok((k.clone(), value))
+                })
+                .collect::<Result<HashMap<_, _>, _>>()?,
+            None => {
+                return Err(ExchangeRateParserError::ShapeError(format!(
+                    "JSON in wrong shape (map): {json}"
+                )))
+            }
+        };
+
+        return Ok(ExchangeRateMap {
+            datetime,
+            base,
+            map,
+        });
+    }
+
+    pub async fn get_rate_fallback(
+        date: NaiveDate,
+        base: Option<String>,
+    ) -> Result<ExchangeRateMap, FetchExchangeRateError> {
+        let m = match get_local_exchange_rate_fallback(date) {
+            Some(txt) => match ExchangeRateMap::parse_fallback_json(&txt) {
+                Ok(m) => m,
+                Err(e) => return Err(FetchExchangeRateError::ParseError(e)),
+            },
+            None => {
+                let api_key = match environment::get_fallback_exchange_rate_api_key() {
+                    Some(key) => key,
+                    None => return Err(FetchExchangeRateError::MissingKeyError),
+                };
+                let api_base = environment::get_fallback_exchange_rate_api_url();
+
+                let query_params = vec![
+                    format!("access_key={}", api_key),
+                    format!("base={}", base.unwrap_or("EUR".to_string())),
+                ];
+                let fetch_url = format!(
+                    "{}/{}?{}",
+                    api_base,
+                    date.format("%Y-%m-%d"),
+                    query_params.join("&")
+                );
+
+                log::debug!("Local cache missed. Getting from {fetch_url}");
+
+                let response: reqwest::Response = match reqwest::get(&fetch_url).await {
+                    Ok(r) => r,
+                    Err(e) => return Err(FetchExchangeRateError::NetworkError(e.to_string())),
+                };
+
+                let text = match response.text().await {
+                    Ok(t) => t,
+                    Err(e) => return Err(FetchExchangeRateError::ResponseBodyError(e.to_string())),
+                };
+
+                let map = match ExchangeRateMap::parse_fallback_json(&text) {
+                    Ok(map) => {
+                        let timestamp = map.datetime;
+                        save_exchange_rate_fallback(&text, timestamp);
+                        map
+                    }
+                    Err(e) => return Err(FetchExchangeRateError::ParseError(e)),
+                };
+                map
+            }
+        };
+
+        // log::debug!("JSON text for the fallback: {}", json_txt);
+        Ok(m)
     }
 
     pub async fn get_rates(
@@ -150,14 +289,20 @@ impl ExchangeRateMap {
 
         let parsed: Value = match serde_json::from_str(&text) {
             Ok(v) => v,
-            Err(e) => return Err(FetchExchangeRateError::ParseError(e)),
+            Err(e) => {
+                return Err(FetchExchangeRateError::ParseError(
+                    ExchangeRateParserError::SerdeError(e),
+                ))
+            }
         };
 
         let rates_raw = parsed
             .get("rates")
             .and_then(|v| v.as_object())
             .ok_or_else(|| {
-                FetchExchangeRateError::ShapeError("rates in wrong shape".to_string())
+                FetchExchangeRateError::ParseError(ExchangeRateParserError::ShapeError(
+                    "rates in wrong shape".to_string(),
+                ))
             })?;
 
         let mut rates = Vec::new();
@@ -165,21 +310,25 @@ impl ExchangeRateMap {
         for (date, rate_map) in rates_raw {
             let date_with_time = format!("{}T00:00:00+00:00", date);
             let datetime = DateTime::parse_from_rfc3339(&date_with_time).map_err(|e| {
-                FetchExchangeRateError::ShapeError(format!(
+                FetchExchangeRateError::ParseError(ExchangeRateParserError::ShapeError(format!(
                     "Invalid date ({}): {:?}",
                     date_with_time, e
-                ))
+                )))
             })?;
 
             let rate_map = rate_map.as_object().ok_or_else(|| {
-                FetchExchangeRateError::ShapeError("rate_map in wrong shape".to_string())
+                FetchExchangeRateError::ParseError(ExchangeRateParserError::ShapeError(
+                    "rate_map in wrong shape".to_string(),
+                ))
             })?;
 
             let map: HashMap<String, f64> = rate_map
                 .iter()
                 .map(|(k, v)| {
                     let value = v.as_f64().ok_or_else(|| {
-                        FetchExchangeRateError::ShapeError(format!("Invalid value for key: {}", k))
+                        FetchExchangeRateError::ParseError(ExchangeRateParserError::ShapeError(
+                            format!("Invalid value for key: {}", k),
+                        ))
                     })?;
                     Ok((k.clone(), value))
                 })
