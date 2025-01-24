@@ -1,7 +1,7 @@
 import json
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -65,11 +65,14 @@ class SimpleJSONServer(BaseHTTPRequestHandler):
 
         # Use current date if no date is provided
         response_date = date or datetime.now().strftime("%Y-%m-%d")
+         # Convert the response date to a timestamp
+        response_datetime = datetime.strptime(response_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        timestamp = int(response_datetime.timestamp())
 
         # Prepare the response
         response_data = {
             "success": True,
-            "timestamp": int(time.time()),
+            "timestamp": timestamp,
             "base": base_currency,
             "date": response_date,
             "rates": rates,
