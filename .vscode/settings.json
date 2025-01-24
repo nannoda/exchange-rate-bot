@@ -4,6 +4,7 @@
         "dotenv",
         "ollama",
         "reqwest",
-        "rusqlite"
+        "rusqlite",
+        "searxng"
     ]
 }

@@ -98,11 +98,15 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
     return threshold;
 }
 
+pub fn get_searxng_url() -> Option<String> {
+    match env::var("SEARXNG_URL") {
+        Ok(url) => Some(url),
+        Err(_)=> None
+    }
+}
+
 pub fn get_exchange_rate_api_url() -> String {
-    return get_and_set_env_var(
-        "EXCHANGE_RATE_API_URL",
-        "https://api.frankfurter.dev/v1",
-    );
+    return get_and_set_env_var("EXCHANGE_RATE_API_URL", "https://api.frankfurter.dev/v1");
 }
 
 pub fn get_increase_prompt_template() -> String {
