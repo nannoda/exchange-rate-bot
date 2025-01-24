@@ -61,7 +61,7 @@ pub fn get_local_exchange_rate_fallback(date: chrono::NaiveDate) -> Option<Strin
         LIMIT 1;
     "#;
 
-    match con.query_row(query, params![date.to_string()], |row| row.get(0)) {
+    match con.query_row(query, params![date.format("%Y-%m-%d").to_string()], |row| row.get(0)) {
         Ok(json) => {
             log::debug!("Retrieved fallback exchange rate for {}: {}", date, json);
             Some(json)
