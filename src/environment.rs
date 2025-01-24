@@ -264,6 +264,8 @@ fn ensure_db() {
     con.execute(CREATE_LLM_RESULT_TABLE_QUERY, []).unwrap();
     con.execute(CREATE_HISTORICAL_DATA_TABLE_QUERY, []).unwrap();
     con.execute(CREATE_SEARCH_RESULT_TABLE_QUERY, []).unwrap();
+    con.execute(CREATE_EXCHANGE_RATE_FALLBACK_TABLE_QUERY, [])
+        .unwrap();
 }
 
 /// Ensure environment variables are set

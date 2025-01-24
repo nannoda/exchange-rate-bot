@@ -1,4 +1,6 @@
-use serenity::all::{CommandDataOptionValue, CreateAttachment, CreateMessage, EditInteractionResponse};
+use serenity::all::{
+    CommandDataOptionValue, CreateAttachment, CreateMessage, EditInteractionResponse,
+};
 use serenity::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -14,7 +16,7 @@ use crate::{commands, environment};
 
 async fn send_exchange_rate_message(ctx: Arc<Context>, from: &str, to: &str) {
     let msg = get_exchange_rate_message(from, to).await;
-    
+
     let mut message = CreateMessage::new().content(msg.message);
 
     // Conditionally add the file if `msg.graph` exists
@@ -95,24 +97,17 @@ impl EventHandler for ExchangeRateBotEventHandler {
                 return; // Exit if the initial response fails
             }
 
-            let content: Option<EditInteractionResponse> = match command.data.name.as_str()
-            {
+            let content: Option<EditInteractionResponse> = match command.data.name.as_str() {
                 commands::check_rate::COMMAND_NAME => {
                     Some(commands::check_rate::run(&command.data.options()).await)
                 }
                 commands::about::COMMAND_NAME => Some(commands::about::run()),
-                _ => Some(
-                    EditInteractionResponse::new()
-                        .content("not implemented :(".to_string()),
-                ),
+                _ => Some(EditInteractionResponse::new().content("not implemented :(".to_string())),
             };
 
             if let Some(content) = content {
                 // Step 3: Edit the deferred response to send the final result
-                if let Err(why) = command
-                    .edit_response(&ctx.http, content)
-                    .await
-                {
+                if let Err(why) = command.edit_response(&ctx.http, content).await {
                     log::warn!("Cannot send final response to slash command: {why}");
                 }
             }

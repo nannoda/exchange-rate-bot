@@ -1,18 +1,19 @@
 use dotenv::dotenv;
-mod environment;
-mod utils;
 mod bot;
-mod llm;
 mod commands;
 mod database;
+mod environment;
 mod exchange_rate;
+mod llm;
+mod utils;
 
 #[tokio::main]
 async fn main() {
     match dotenv() {
         Ok(_) => {
             env_logger::init();
-            log::debug!("Loaded .env file")},
+            log::debug!("Loaded .env file")
+        }
         Err(_) => {
             env_logger::init();
             log::debug!("No .env file found")

@@ -83,7 +83,6 @@ pub async fn run(options: &[ResolvedOption<'_>]) -> EditInteractionResponse {
     // Generate the exchange rate message
     let msg = get_exchange_rate_message(from.as_str(), to.as_str()).await;
 
-
     // Make `response` mutable to allow modifications
     let mut response = EditInteractionResponse::new().content(msg.message);
 

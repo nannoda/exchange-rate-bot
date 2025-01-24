@@ -17,6 +17,7 @@ use crate::{
 use std::{
     collections::HashMap,
     fmt::{self, format},
+    hash::Hash,
     iter::Map,
 };
 
@@ -92,6 +93,12 @@ pub enum FetchExchangeRateError {
     // ShapeError(String),
     #[error("Missing API Key")]
     MissingKeyError,
+}
+
+impl ExchangeRateMap {
+    pub fn get_date(&self) -> chrono::NaiveDate {
+        self.datetime.date_naive()
+    }
 }
 
 #[derive(Debug, Error)]
@@ -190,7 +197,7 @@ impl ExchangeRateMap {
 
     pub async fn get_rate_fallback(
         date: NaiveDate,
-        base: Option<String>,
+        base: Option<&String>,
     ) -> Result<ExchangeRateMap, FetchExchangeRateError> {
         let m = match get_local_exchange_rate_fallback(date) {
             Some(txt) => match ExchangeRateMap::parse_fallback_json(&txt) {
@@ -206,7 +213,7 @@ impl ExchangeRateMap {
 
                 let query_params = vec![
                     format!("access_key={}", api_key),
-                    format!("base={}", base.unwrap_or("EUR".to_string())),
+                    format!("base={}", base.unwrap_or(&"EUR".to_string())),
                 ];
                 let fetch_url = format!(
                     "{}/{}?{}",
@@ -244,10 +251,10 @@ impl ExchangeRateMap {
     }
 
     pub async fn get_rates(
-        from_date: DateTime<Utc>,
+        from_date: NaiveDate,
         base: Option<String>,
     ) -> Result<Vec<ExchangeRateMap>, FetchExchangeRateError> {
-        let base = base.unwrap_or("EUR".to_string()).to_uppercase();
+        let base: String = base.unwrap_or("EUR".to_string()).to_uppercase();
 
         let api_base = environment::get_exchange_rate_api_url();
         let fetch_url = format!(
@@ -305,7 +312,7 @@ impl ExchangeRateMap {
                 ))
             })?;
 
-        let mut rates = Vec::new();
+        let mut rates: HashMap<NaiveDate, ExchangeRateMap> = HashMap::new();
 
         for (date, rate_map) in rates_raw {
             let date_with_time = format!("{}T00:00:00+00:00", date);
@@ -335,18 +342,54 @@ impl ExchangeRateMap {
                 .collect::<Result<HashMap<_, _>, FetchExchangeRateError>>()?;
             log::debug!("Map: {:?}", map);
 
-            rates.push(ExchangeRateMap {
-                datetime: datetime.into(),
-                base: base.clone(),
-                map,
-            });
+            rates.insert(
+                datetime.date_naive(),
+                ExchangeRateMap {
+                    datetime: datetime.into(),
+                    base: base.clone(),
+                    map,
+                },
+            );
+
+            // rates.push(;
         }
 
-        log::debug!("Rates: {:?}", rates.get(0).unwrap().get_val("USD", "CNY"));
+        // log::debug!("Rates: {:?}", rates.get(0).unwrap().get_val("USD", "CNY"));
 
         // Sort rates by datetime
-        rates.sort_by(|a, b| a.datetime.cmp(&b.datetime));
+        // rates.sort_by(|a, b| a.datetime.cmp(&b.datetime));
 
-        Ok(rates)
+        // The EU bank API doesn't have data on weekend.
+        // Fill in empty
+        let mut current_date = Utc::now().date_naive();
+
+        while current_date >= from_date {
+            if rates.get(&current_date).is_none() {
+                // Date is missing
+                match ExchangeRateMap::get_rate_fallback(current_date, Some(&base)).await {
+                    Ok(map) => {
+                        rates.insert(current_date, map);
+                    }
+                    Err(e) => {
+                        log::warn!("Error: {e}")
+                    }
+                };
+            }
+
+            current_date = match current_date.pred_opt() {
+                Some(date) => date,
+                None => {
+                    log::warn!("Unable to get previous date from {current_date}");
+                    break;
+                }
+            }
+        }
+
+        // Convert HashMap to Vec, sorting by the date (NaiveDate)
+        let mut result_vec: Vec<ExchangeRateMap> = rates.into_iter().map(|(_, v)| v).collect();
+
+        result_vec.sort_by(|a, b| a.datetime.cmp(&b.datetime));
+
+        Ok(result_vec)
     }
 }

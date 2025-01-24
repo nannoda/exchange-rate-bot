@@ -1,6 +1,5 @@
 use log::warn;
 
-
 const DEFAULT_TIME_SECONDS: u64 = 86400;
 
 pub fn string_to_time_second(s: &str) -> u64 {
@@ -99,5 +98,3 @@ pub fn string_to_time_second(s: &str) -> u64 {
         }
     }
 }
-
-

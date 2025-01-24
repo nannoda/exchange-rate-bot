@@ -1,4 +1,7 @@
-use serenity::all::{CreateCommand, CreateInteractionResponseMessage, CreateMessage, EditInteractionResponse, Message};
+use serenity::all::{
+    CreateCommand, CreateInteractionResponseMessage, CreateMessage, EditInteractionResponse,
+    Message,
+};
 
 use crate::environment;
 
@@ -11,7 +14,7 @@ pub fn register() -> CreateCommand {
 
 pub fn run() -> EditInteractionResponse {
     let content = format!(
-    "
+        "
     **Exchange Rate Bot**\n\
     Version: `{}`\n\n\
     **Configuration**:\n\

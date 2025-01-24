@@ -1,9 +1,13 @@
 use chrono::{Duration, Utc};
 
-use crate::{database::exchange_rate::save_exchange_rate, environment, exchange_rate::ExchangeRateMap, llm::{generate::generate_sentence, prompt::get_prompt}};
+use crate::{
+    database::exchange_rate::save_exchange_rate,
+    environment,
+    exchange_rate::ExchangeRateMap,
+    llm::{generate::generate_sentence, prompt::get_prompt},
+};
 
 use super::plots::get_trend_graph;
-
 
 pub struct ExchangeRateMessage {
     pub message: String,
@@ -12,7 +16,7 @@ pub struct ExchangeRateMessage {
 
 pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMessage {
     // Calculate the date 7 days ago
-    let from_date = Utc::now() - Duration::days(30);
+    let from_date = (Utc::now() - Duration::days(30)).date_naive();
 
     let rates = ExchangeRateMap::get_rates(from_date, Some(from.into())).await;
 
@@ -21,8 +25,7 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
             // Print out rates
             for r in &rates {
                 log::debug!("{}",r);
-            }
-            
+            };
             let prompt = get_prompt(&rates, from, to);
 
             let rate: f64 = rates
@@ -77,13 +80,11 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
                 message: msg,
                 graph: graph_result.ok()
             }
-           
         }
         Err(e) => {
             ExchangeRateMessage{
                 message:format!("Error fetching API. Please verify the API URL and Internet connection. URL used: `{}`\n`Error: {:?}`", 
-                environment::get_exchange_rate_api_url(), 
-                e),
+                environment::get_exchange_rate_api_url(), e),
                 graph: None
             }
         }
