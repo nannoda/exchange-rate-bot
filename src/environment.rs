@@ -55,6 +55,15 @@ CREATE TABLE IF NOT EXISTS historical_data (
     insert_at DATETIME DEFAULT CURRENT_TIMESTAMP -- DateTime to store insertion timestamp
 );"#;
 
+const CREATE_SEARCH_RESULT_TABLE_QUERY: &str = r#"
+CREATE TABLE IF NOT EXISTS search_result
+(
+    url TEXT NOT NULL,
+    result TEXT NOT NULL,
+    time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"#;
+
 pub fn get_interval() -> u64 {
     let interval_str = get_and_set_env_var("INTERVAL", "24h");
     let interval_int = string_to_time_second(interval_str.as_str());
@@ -101,7 +110,7 @@ pub fn get_exchange_rate_change_threshold() -> f64 {
 pub fn get_searxng_url() -> Option<String> {
     match env::var("SEARXNG_URL") {
         Ok(url) => Some(url),
-        Err(_)=> None
+        Err(_) => None,
     }
 }
 
@@ -157,6 +166,7 @@ Instructions:
 - Follow the user's specific instructions to shape the style and direction of each update.
 - Structure all information clearly, with an eye for what readers will find most relevant or intriguing.
 - Prioritize personality — think of yourself as a smart, engaging financial commentator with a sense of humor and a knack for making finance approachable.
+- Provide insight using your knowledge of the news and information about the date.
 "#,
     );
 }
@@ -231,6 +241,7 @@ fn ensure_db() {
         .unwrap();
     con.execute(CREATE_LLM_RESULT_TABLE_QUERY, []).unwrap();
     con.execute(CREATE_HISTORICAL_DATA_TABLE_QUERY, []).unwrap();
+    con.execute(CREATE_SEARCH_RESULT_TABLE_QUERY, []).unwrap();
 }
 
 /// Ensure environment variables are set

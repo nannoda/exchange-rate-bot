@@ -1,4 +1,12 @@
-use crate::{environment, exchange_rate::ExchangeRateMap};
+use std::fmt::format;
+
+use chrono::{DateTime, Utc};
+
+use crate::{
+    environment,
+    exchange_rate::ExchangeRateMap,
+    utils::search::{get_news, search_date},
+};
 
 pub fn render_template(
     template: &str,
@@ -60,4 +68,54 @@ pub fn get_prompt(rates: &Vec<ExchangeRateMap>, from: &str, to: &str) -> String 
 
     log::debug!("Prompt: {}", prompt);
     prompt
+}
+
+pub async fn get_news_prompt(date: DateTime<Utc>) -> String {
+    let news_list = get_news(date, 5).await;
+
+    let mut prompt = match news_list.len() {
+        0 => format!(""),
+        _ => format!("News on {}", date.format("%d/%m/%Y")),
+    };
+
+    for news in news_list {
+        prompt = prompt
+            + format!(
+                "\n# {}\n{}\n[link]({})\n",
+                &news.title.unwrap_or("No Title".to_string()),
+                &news.content.unwrap_or("No content...".to_string()),
+                &news.url.unwrap_or("N/A".to_string())
+            )
+            .as_str()
+    }
+
+    prompt = prompt + "\n";
+
+    log::debug!("News Prompt: {prompt}");
+    return prompt;
+}
+
+pub async fn get_date_prompt(date: DateTime<Utc>) -> String {
+    let news_list = search_date(date, 5).await;
+
+    let mut prompt = match news_list.len() {
+        0 => format!(""),
+        _ => format!("Search result date [d/m]: {}", date.format("%d/%m")),
+    };
+
+    for news in news_list {
+        prompt = prompt
+            + format!(
+                "\n# {}\n{}\n[link]({})\n",
+                &news.title.unwrap_or("No Title".to_string()),
+                &news.content.unwrap_or("No content...".to_string()),
+                &news.url.unwrap_or("N/A".to_string())
+            )
+            .as_str()
+    }
+
+    prompt = prompt + "\n";
+
+    log::debug!("Date Prompt: {prompt}");
+    return prompt;
 }

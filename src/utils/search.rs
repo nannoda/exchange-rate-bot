@@ -3,7 +3,9 @@ use std::sync::BarrierWaitResult;
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 
-use crate::{environment::get_searxng_url, main, utils::parse};
+use crate::{
+    database::search_result::save_search_result, environment::get_searxng_url, main, utils::parse,
+};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 pub enum SearchCategory {
@@ -54,6 +56,8 @@ pub async fn search(keyword: &str, category: SearchCategory) -> Option<Value> {
         }
     };
 
+    save_search_result(&url, &text);
+
     let parsed: Value = match serde_json::from_str(&text) {
         Ok(v) => v,
         Err(e) => {
@@ -67,9 +71,9 @@ pub async fn search(keyword: &str, category: SearchCategory) -> Option<Value> {
 
 #[derive(Debug)]
 pub struct SearchResult {
-    url: Option<String>,
-    title: Option<String>,
-    content: Option<String>,
+    pub url: Option<String>,
+    pub title: Option<String>,
+    pub content: Option<String>,
 }
 
 pub async fn get_news(datetime: DateTime<Utc>, max: u8) -> Vec<SearchResult> {
@@ -77,6 +81,62 @@ pub async fn get_news(datetime: DateTime<Utc>, max: u8) -> Vec<SearchResult> {
     let v = match search(
         &format!("news on {}", datetime.format("%Y %m %d")),
         SearchCategory::News,
+    )
+    .await
+    {
+        Some(v) => v,
+        None => return new_list,
+    };
+
+    let results = match v.get("results").and_then(|v| v.as_array()) {
+        Some(r) => r,
+        None => {
+            log::error!("No result");
+            return new_list;
+        }
+    };
+
+    for i in 0..max {
+        if (usize::from(i) > results.len()) {
+            break;
+        }
+
+        let item = match results.get(usize::from(i)) {
+            Some(i) => i,
+            None => {
+                log::debug!("[{i}] doesn't exist.");
+                continue;
+            }
+        };
+
+        let url = item
+            .get("url")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Some(s.to_owned()));
+        let title = item
+            .get("title")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Some(s.to_owned()));
+        let content = item
+            .get("content")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Some(s.to_owned()));
+
+        new_list.push(SearchResult {
+            url,
+            title,
+            content,
+        });
+    }
+
+    return new_list;
+}
+
+pub async fn search_date(datetime: DateTime<Utc>, max: u8) -> Vec<SearchResult> {
+    let mut new_list = vec![];
+    let v = match search(
+        &format!("what is special about {}", datetime.format("%m %d")),
+        SearchCategory::General,
     )
     .await
     {
@@ -175,6 +235,27 @@ mod tests {
         assert!(
             !results.is_empty(),
             "get_news should return results (mocked case)"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_date() {
+        // Initialize the logger
+        init_logger();
+        // Mock the SearxNG URL environment variable
+        std::env::set_var("SEARXNG_URL", "https://searxng.nannoda.com");
+        // Mock a datetime value
+        let datetime = Utc::now();
+
+        // Call the function
+        let results = search_date(datetime, 5).await;
+
+        println!("result: {:?}", results);
+
+        // Assert the results
+        assert!(
+            !results.is_empty(),
+            "search_date should return results (mocked case)"
         );
     }
 }
