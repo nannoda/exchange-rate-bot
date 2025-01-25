@@ -1,14 +1,8 @@
 use std::io;
 
-use chrono::{DateTime, NaiveDate, Utc};
-use image::{
-    codecs::png::PngEncoder, ColorType, ExtendedColorType, ImageBuffer, ImageEncoder, ImageError,
-    RgbImage,
-};
-use plotters::style::{
-    text_anchor::{HPos, Pos, VPos},
-    IntoFont, RED, WHITE,
-};
+use chrono::NaiveDate;
+use image::{ImageEncoder, ImageError, RgbImage};
+use plotters::style::WHITE;
 
 use plotters::prelude::*;
 use thiserror::Error;

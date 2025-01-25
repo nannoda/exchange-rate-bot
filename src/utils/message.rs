@@ -4,7 +4,7 @@ use crate::{
     database::exchange_rate::save_exchange_rate,
     environment,
     exchange_rate::ExchangeRateMap,
-    llm::{generate::generate_sentence, prompt::get_prompt},
+    llm::{self, generate::generate_sentence, prompt::get_prompt},
 };
 
 use super::plots::get_trend_graph;
@@ -59,19 +59,32 @@ pub async fn get_exchange_rate_message(from: &str, to: &str) -> ExchangeRateMess
                 "{}\n\
                 ```\n\
                 1 {} = {} {}\n\
-                Message generated in {}.{:03} seconds\n\
+                Searched in {}.{:03} seconds\n\
+                Model Loaded in {}.{:03} seconds\n\
+                Evaluated in {}.{:03} seconds\n\
                 Graph generated in {}.{:03} seconds{}\n\
                 Generated in {}.{:03} seconds\n\
                 ```",
-                llm_res,
+                llm_res.content,
+
                 from,
                 rate,
                 to,
-                elapsed_llm.as_secs(),
-                elapsed_llm.subsec_millis(),
+
+                llm_res.search_duration.as_secs(),
+                llm_res.search_duration.subsec_millis(),
+
+                llm_res.load_duration.as_secs(),
+                llm_res.load_duration.subsec_millis(),
+
+                llm_res.eval_duration.as_secs(),
+                llm_res.eval_duration.subsec_millis(),
+
                 elapsed_graph.as_secs(),
                 elapsed_graph.subsec_millis(),
+
                 graph_message, // Add the error message dynamically
+                
                 elapsed_total.as_secs(),
                 elapsed_total.subsec_millis(),
             );

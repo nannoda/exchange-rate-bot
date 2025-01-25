@@ -1,11 +1,7 @@
-use std::sync::BarrierWaitResult;
-
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 
-use crate::{
-    database::search_result::save_search_result, environment::get_searxng_url, main, utils::parse,
-};
+use crate::{database::search_result::save_search_result, environment::get_searxng_url};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 
 pub enum SearchCategory {
