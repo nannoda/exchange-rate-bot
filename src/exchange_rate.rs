@@ -1,6 +1,4 @@
-use chrono::{
-    DateTime, NaiveDate, Utc,
-};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -193,7 +191,6 @@ impl ExchangeRateMap {
 
     pub async fn get_rate_fallback(
         date: NaiveDate,
-        base: Option<&String>,
     ) -> Result<ExchangeRateMap, FetchExchangeRateError> {
         let m = match get_local_exchange_rate_fallback(date) {
             Some(txt) => match ExchangeRateMap::parse_fallback_json(&txt) {
@@ -207,10 +204,7 @@ impl ExchangeRateMap {
                 };
                 let api_base = environment::get_fallback_exchange_rate_api_url();
 
-                let query_params = vec![
-                    format!("access_key={}", api_key),
-                    format!("base={}", base.unwrap_or(&"EUR".to_string())),
-                ];
+                let query_params = vec![format!("access_key={}", api_key)];
                 let fetch_url = format!(
                     "{}/{}?{}",
                     api_base,
@@ -346,11 +340,7 @@ impl ExchangeRateMap {
                     map,
                 },
             );
-
-            // rates.push(;
         }
-
-        // log::debug!("Rates: {:?}", rates.get(0).unwrap().get_val("USD", "CNY"));
 
         // Sort rates by datetime
         // rates.sort_by(|a, b| a.datetime.cmp(&b.datetime));
@@ -362,7 +352,7 @@ impl ExchangeRateMap {
         while current_date >= from_date {
             if rates.get(&current_date).is_none() {
                 // Date is missing
-                match ExchangeRateMap::get_rate_fallback(current_date, Some(&base)).await {
+                match ExchangeRateMap::get_rate_fallback(current_date).await {
                     Ok(map) => {
                         rates.insert(current_date, map);
                     }
