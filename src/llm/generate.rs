@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::environment::{self, get_system_prompt};
 use crate::llm::prompt::{get_date_prompt, get_news_prompt};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use reqwest;
 use serde_json::Value;
 use tokio::join;

@@ -1,7 +1,6 @@
 use log::debug;
 use serenity::all::{
-    CommandOptionType, CreateAttachment, CreateEmbed, CreateInteractionResponseMessage,
-    CreateMessage, EditInteractionResponse,
+    CommandOptionType, CreateAttachment, EditInteractionResponse,
 };
 use serenity::builder::{CreateAutocompleteResponse, CreateCommand, CreateCommandOption};
 use serenity::model::application::{ResolvedOption, ResolvedValue};

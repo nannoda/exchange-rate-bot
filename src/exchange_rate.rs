@@ -1,8 +1,7 @@
 use chrono::{
-    DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, ParseError, TimeZone, Utc,
+    DateTime, NaiveDate, Utc,
 };
 use serde_json::Value;
-use serenity::{json, model::timestamp};
 use thiserror::Error;
 
 use crate::{
@@ -12,13 +11,10 @@ use crate::{
         save_raw_exchange_rate_result,
     },
     environment::{self},
-    main,
 };
 use std::{
     collections::HashMap,
-    fmt::{self, format},
-    hash::Hash,
-    iter::Map,
+    fmt::{self},
 };
 
 #[derive(Debug, Clone)]

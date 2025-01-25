@@ -1,6 +1,5 @@
 use serenity::all::{
-    CreateCommand, CreateInteractionResponseMessage, CreateMessage, EditInteractionResponse,
-    Message,
+    CreateCommand, EditInteractionResponse,
 };
 
 use crate::environment;

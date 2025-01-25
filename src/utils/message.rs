@@ -4,7 +4,7 @@ use crate::{
     database::exchange_rate::save_exchange_rate,
     environment,
     exchange_rate::ExchangeRateMap,
-    llm::{self, generate::generate_sentence, prompt::get_prompt},
+    llm::{generate::generate_sentence, prompt::get_prompt},
 };
 
 use super::plots::get_trend_graph;

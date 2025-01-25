@@ -93,7 +93,7 @@ pub async fn get_news(datetime: DateTime<Utc>, max: u8) -> Vec<SearchResult> {
     };
 
     for i in 0..max {
-        if (usize::from(i) > results.len()) {
+        if usize::from(i) > results.len() {
             break;
         }
 
@@ -149,7 +149,7 @@ pub async fn search_date(datetime: DateTime<Utc>, max: u8) -> Vec<SearchResult> 
     };
 
     for i in 0..max {
-        if (usize::from(i) > results.len()) {
+        if usize::from(i) > results.len() {
             break;
         }
 
